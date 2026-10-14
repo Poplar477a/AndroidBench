@@ -1398,3 +1398,30 @@ BenchmarkViewModel「内置微基准工作负载 / 内置微基准执行中」�
 - 同一组件两次运行耗时差异明显（lbm 首轮 6.247 s → 本轮 1.211 s），来自冷启动/页缓存与热状态，
   单次读数不足以作为结论，绑核与多轮对比才是有意义的用法——文本里也这样写了。
 
+
+---
+
+## 2026-10-14 13:5x（第 30 轮）：推送并验证到第二台真机 —— 一加 15（PLK110 / SM8850）
+
+### A. 推送内容（一加 15，序列号 3B15AX02DWK00000）
+- 设备画像：PLK110 / OnePlus / **Android 17（SDK 37）** / **arm64-v8a** / SoC **SM8850** / **已 root**（KernelSU，u:r:ksu:s0）/ 未锁屏；
+- 安装：`app-lab-release.apk`（含第 28 轮 4 个 BYOB 修复）✓ + 刷新 `com.ufs.bench`（standard）✓；
+- 组件包：`519.lbm_r.zip`、`505.mcf_r.zip` 推入 `/sdcard/Download/` 并触发媒体扫描 ✓；
+- 应用内导入：两个包都「通过：已就位 …二进制 通过：arm64 ELF，依赖 3 项全部在白名单内」✓。
+
+### B. 双机实测对比（同一二进制、同一参考输出，sha256 完全一致）
+
+| 组件 | 红米 SM7475（第 28 轮） | 一加 15 SM8850 | 判分 |
+|---|---|---|---|
+| 519.lbm_r | exit 0 · 6.247 s（冷）/ 1.211 s（热）· RSS 412 MB | exit 0 · **0.781 s** · RSS 412 MB | 通过（15/15 行） |
+| 505.mcf_r | exit 0 · 11.722 s · RSS 370 MB | exit 0 · **8.748 s** · RSS 385 MB | 通过（56/56 行） |
+
+沙箱九步在一加 15 上同样全过：`before-netns → netns-done → setgroups → setgid → setuid →
+capset → rlimits → chdir → about-execve` ✓
+
+**诚实说明**：以上是单次读数，且热状态/页缓存不同（同一台红米的 lbm 就有 6.247 s 与 1.211 s 两次差异），
+只能说明"组件包在新 SoC 上同样可用、判分一致"，**不足以当作两机性能结论**；
+要做对比必须多轮 + 绑核（绑核建议已内置在终端输出里）。
+
+证据：`.evidence/device_out/oneplus15/{519.lbm_r,505.mcf_r}.result.txt`
+

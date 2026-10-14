@@ -149,3 +149,41 @@ CoreTopologyDetector 读 /proc/cpuinfo 的 CPU part：所有核同构且非小�
 - 取设备二进制一律用 base64 或 adb pull（adb shell cat 会被 Windows PTY 注入 CRLF，曾把 47760 字节的 .profraw
   拉成 47902 字节、版本号读成 2573）；.evidence/ev.py 的 pull_bin() 已内置长度校验。
 - 档位是否真的生效，只看 logcat 里 engine load 行的 active= 与 fallback=；"应用能跑完"不算验证。
+
+---
+
+## 七、 仓库布局与 SPEC 组件流水线（2026-10 整理）
+
+### 1. 顶层布局
+
+| 路径 | 作用 | 是否入库 |
+|---|---|---|
+| app/ | UFS Benchmark 应用（Kotlin/Compose + NDK C/C++/ASM） | 是 |
+| app/src/main/cpp/bench/ | 内置基准内核层（CoreMark / STREAM / tinymembench，裁剪自上游） | 是 |
+| AndroidBenech/ | 独立的 Android 基准套件（内核层 + CLI + Kotlin 规模策略） | 是（upstream/ 素材除外） |
+| tools/spec2017/ | SPEC CPU2017 → Android 组件包 构建流水线 | 是 |
+| docs/ | 需求/契约/证据文档（含 verified-facts.md 逐轮实测记录） | 是 |
+| .evidence/ | 过程证据（截图、日志、构建产物、组件包） | 否（.gitignore） |
+| SPEC2017/ | SPEC CPU2017 安装介质解包树（商业许可内容） | 否（.gitignore） |
+| AndroidBenech/upstream/ | 上游源码采集区（1.2 GB，按 SOURCES_MANIFEST.md 可重建） | 否（.gitignore） |
+| .tools/ | Android SDK / NDK | 否（.gitignore） |
+
+### 2. SPEC2017 → 组件包（BYOB）流水线
+
+    python3 tools/spec2017/build_components.py --spec-root SPEC2017 --out .evidence/byob_pkg
+
+**官方口径（实测确认，详见 docs/verified-facts.md 第 27 轮）**：
+必须加  编译 —— 官方参考输出即在该宏下生成；不加会走  分支，
+输出行数与数值都可能与官方参考不符。mcf 另需  并链接基准自带的
+（官方用 SPEC 自己的 qsort，排序稳定性不同会改变迭代轨迹）。
+
+产出的  即组件包（runner.json + bin/ + data/），在应用「终端」页用
+「导入组件包(.zip)」导入，然后：
+
+    list                # 列出已就位组件
+    verify <id>         # ELF 准入核验（arm64 + bionic 依赖白名单）
+    run <id>            # 沙箱执行 + 与官方参考容差判分
+
+注意：组件包内是 **arm64** 二进制，必须在 arm64 真机运行；x86_64（含带 ARM 翻译的模拟器）
+上  会诚实失败（exit -1 / 无输出文件），不会给出虚假成绩。
+

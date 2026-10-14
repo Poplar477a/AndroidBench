@@ -53,8 +53,9 @@ object OracleVerifier {
         val refAll = referenceFile.readLines()
         val actAll = actualFile.readLines()
         val skippedCount = refAll.count { skipped(it) } + actAll.count { skipped(it) }
-        val refLines = refAll.filterNot { skipped(it) }
-        val actLines = actAll.filterNot { skipped(it) }
+        // 空行不承载信息，且官方参考与实测输出的空行位置可能不同 -> 两侧一并剔除
+        val refLines = refAll.filterNot { skipped(it) || it.isBlank() }
+        val actLines = actAll.filterNot { skipped(it) || it.isBlank() }
         val mismatches = ArrayList<Mismatch>()
         var compared = 0
         val n = minOf(refLines.size, actLines.size)

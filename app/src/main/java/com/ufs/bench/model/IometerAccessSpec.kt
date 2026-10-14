@@ -244,7 +244,9 @@ data class IometerAccessSpec(
         get() = when (mode) {
             BenchmarkMode.STANDARD_READ_WRITE -> if (percentRandom == 0) "SEQ 读写" else "RND 读写"
             BenchmarkMode.MIXED_SIMULTANEOUS -> "MIX ${percentRead}/${100 - percentRead}"
-            BenchmarkMode.BUILTIN_KERNEL -> "SPEC ${percentRead}/${100 - percentRead}"
+            // 不得把 SPEC 商标用作界面标签（商标政策 + Fair Use Rules）。此处只是读写占比展示位，
+            // 内置内核与 SPEC 无关，统一改为中性表述。
+            BenchmarkMode.BUILTIN_KERNEL -> "内置内核 ${percentRead}/${100 - percentRead}"
             BenchmarkMode.READ_ONLY -> if (percentRandom == 0) "SEQ 纯读" else "RND 纯读"
             BenchmarkMode.WRITE_ONLY -> if (percentRandom == 0) "SEQ 纯写" else "RND 纯写"
         }

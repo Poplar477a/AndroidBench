@@ -1,5 +1,5 @@
 /* ============================================================================
- * AndroidBenech 移植层 —— 本文件由上游 coremark/posix/core_portme.c 派生。
+ * AndroidBench 移植层 —— 本文件由上游 coremark/posix/core_portme.c 派生。
  *
  * 主体逐字保留，仅做以下三处本地改动（其余一律与上游一致）：
  *   1. 计时改用 CLOCK_MONOTONIC：上游用 CLOCK_REALTIME，会被系统时间调整干扰，

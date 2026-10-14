@@ -1,5 +1,5 @@
 /*
- * core_portme.h —— AndroidBenech 的 CoreMark 平台配置入口。
+ * core_portme.h —— AndroidBench 的 CoreMark 平台配置入口。
  *
  * 上游 coremark.h 会 #include "core_portme.h"，因此**必须由本目录提供该文件名**。
  * 这里只做两件事：引入上游 posix 头（逐字保留，仅改名），以及把输出重定向到我们自己的
@@ -30,7 +30,7 @@
 #define BENCH_STR_(x) #x
 #define BENCH_STR(x) BENCH_STR_(x)
 #ifndef FLAGS_STR
-#define FLAGS_STR "AndroidBenech -O" BENCH_STR(BENCH_OPT_LEVEL) " -fno-omit-frame-pointer (NDK/Clang)"
+#define FLAGS_STR "AndroidBench -O" BENCH_STR(BENCH_OPT_LEVEL) " -fno-omit-frame-pointer (NDK/Clang)"
 #endif
 
 /*

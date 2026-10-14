@@ -1,0 +1,24 @@
+UFS Storage Benchmark (AndroidBench)
+Copyright 2026 Poplar477a
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+本项目包含或参考了以下第三方组件/基准代码，各自版权与许可如下（详见 THIRD_PARTY_LICENSES.md）：
+
+  · EEMBC CoreMark        —— 内核算法与 CRC 校验沿用其源码（EEMBC 许可），本项目做了 Android 移植与包装
+  · STREAM benchmark      —— 源自 John D. McCalpin 的 STREAM 源码，本项目为**变体实现**
+  · tinymembench          —— MIT License, Copyright (c) 2011-2014 Siarhei Siamashka
+  · Iometer               —— 存取规范模型参考 Intel Open Source License 时期的 Iometer（未拷贝其代码）
+  · fio                   —— GPL-2.0。**本仓库与发布 APK 均未包含 fio 二进制**；如需自行编入请遵守 GPL-2.0
+                             （见 tools/build_fio_arm64.sh 顶部警示）
+  · SPEC CPU® 2017        —— SPEC 是 SPEC 的注册商标。本项目**不分发**其源码、输入集与参考输出；
+                             仅提供 BYOB（用户自备组件包）通路。参见 SPEC Fair Use Rules 与商标政策
+  · Android / Google      —— Android 是 Google LLC 的商标；本项目为独立第三方工具，与 Google 无从属关系
+
+商标声明：
+  UFS 是 JEDEC Solid State Technology Association 的注册商标。
+  CoreMark 是 Embedded Microprocessor Benchmark Consortium (EEMBC) 的注册商标。
+  SPEC / SPEC CPU 是 Standard Performance Evaluation Corporation 的注册商标。
+  CrystalDiskMark 是 Noriyuki Miyazaki 的商标/产品名（本项目仅作事实性参照，无从属关系）。
+  本工具是独立实现的测量工具，与上述任何组织均无隶属、赞助或背书关系。
+

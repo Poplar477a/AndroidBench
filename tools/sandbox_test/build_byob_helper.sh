@@ -9,6 +9,11 @@
 #    所以必须能从源码一键复现；否则改了源码却忘了同步二进制，就会出现
 #    "源码看起来对、设备上是旧行为"的漂移。
 #
+#  为什么装在 lab 源集：
+#    BYOB 终端是实验室版专属能力（standard 构建 FEATURE_EXTERNAL_SPEC=false，界面不出现终端页）。
+#    把预编译助手放进 app/src/lab/jniLibs/ 之后，**standard 的 APK 里不含任何预编译可执行文件**，
+#    可避免"APK 内嵌原生可执行程序"被安全扫描（Play Protect / 各家安全中心）当作风险项。
+#
 #  用法：
 #    tools/sandbox_test/build_byob_helper.sh            # 构建到临时目录并对比
 #    tools/sandbox_test/build_byob_helper.sh --install  # 就地更新 jniLibs（需重新构建 App）
@@ -41,7 +46,7 @@ build_one x86_64-linux-android  x86_64    "$TMP/x86_64"
 echo "=== 与签入产物对比 ==="
 drift=0
 for pair in "arm64:arm64-v8a" "x86_64:x86_64"; do
-  new="$TMP/${pair%%:*}"; old="app/src/main/jniLibs/${pair##*:}/libbyob_run.so"
+  new="$TMP/${pair%%:*}"; old="app/src/lab/jniLibs/${pair##*:}/libbyob_run.so"
   a=$(sha256sum "$new" | cut -d' ' -f1); b=$(sha256sum "$old" | cut -d' ' -f1)
   if [ "$a" = "$b" ]; then
     echo "  ${pair##*:}: 一致 ✓ ($a)"

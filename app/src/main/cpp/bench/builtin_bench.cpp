@@ -1,8 +1,8 @@
 /*
- * builtin_bench.cpp —— 把 AndroidBenech 裁剪出的上游基准内核接进 App 的内置基准接口。
+ * builtin_bench.cpp —— 把 AndroidBench 裁剪出的上游基准内核接进 App 的内置基准接口。
  *
  * 设计口径（与需求方确认过的三点）：
- *  1. **真算法、真上游**：内核全部来自 AndroidBenech/upstream 的官方源码（CoreMark 算法文件
+ *  1. **真算法、真上游**：内核全部来自 AndroidBench/upstream 的官方源码（CoreMark 算法文件
  *     逐字节未改），不再使用"仿真/模拟"实现；每个内核都带上游自带的正确性校验（Oracle），
  *     校验不通过的结果一律不算有效成绩。
  *  2. **强度挡位独立**：每个基准按自身算法复杂度给三档参数（低性能 / 常规 / 拓展），
@@ -10,7 +10,7 @@
  *  3. **来源可追溯**：每个内核在 UI 侧的名字、介绍与上游来源一一对应（见 PresetSuites.kt
  *     与本文件的 kMeta 表），报告里给出的读数都注明上游项目与提交号。
  *
- * 与 AndroidBenech 的关系：那边是独立套件（自有 scale policy / guard / UI），这里只取
+ * 与 AndroidBench 的关系：那边是独立套件（自有 scale policy / guard / UI），这里只取
  * 「内核 + 契约」两层做裁剪移植，规模策略改为本 App 的三档强度挡位。
  */
 #include "builtin_kernels.h"

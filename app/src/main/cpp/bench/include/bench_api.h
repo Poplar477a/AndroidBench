@@ -1,5 +1,5 @@
 /*
- * AndroidBenech —— 原生基准统一内核契约 (Native Benchmark Kernel Contract)
+ * AndroidBench —— 原生基准统一内核契约 (Native Benchmark Kernel Contract)
  *
  * 适用文档：docs/ARCHITECTURE.md（JNI 动态库、禁止 fork/exec）、
  *           docs/SCALE_MANAGEMENT.md 第 14 章（资源预算 / 取消 / 正确性校验 / 规模裁剪）

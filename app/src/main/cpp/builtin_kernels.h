@@ -57,7 +57,7 @@ struct RunResult {
 using LiveCallback = std::function<void(const LiveStats&)>;
 
 // ============================================================================
-//  内置基准（2026-10 更换）：内核全部来自 AndroidBenech/upstream 的官方源码，
+//  内置基准（2026-10 更换）：内核全部来自 AndroidBench/upstream 的官方源码，
 //  经裁剪后接入（详见 bench/builtin_bench.cpp 与 PresetSuites 的介绍/来源字段）。
 //    CoreMark 1.0        eembc/coremark @1f483d5（Apache-2.0）—— 整数与控制流
 //    STREAM              jeffhammond/STREAM @6703f75        —— 持续内存带宽

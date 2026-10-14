@@ -1071,7 +1071,7 @@ Kotlin 报 Modifier 'private' is not applicable to 'local function'；已挪到�
 
 ### 换掉了什么
 旧的四项是**本项目自研实现**（821 编译器负载模拟 / 750 NTT 模乘 / 766 流体 DG / 854 图分析），
-既不是 SPEC 套件，名字却带"官方档"字样。现按需求整体更换为从 AndroidBenech/upstream 裁剪的
+既不是 SPEC 套件，名字却带"官方档"字样。现按需求整体更换为从 AndroidBench/upstream 裁剪的
 **上游官方源码**；旧实现的分派分支保留但**预设入口已移除**（下一步连同源文件一起删除）。
 
 ### 新内核（id 刻意与 SPEC 编号空间分开）
@@ -1157,9 +1157,9 @@ BenchmarkViewModel「内置微基准工作负载 / 内置微基准执行中」�
 3. **终端命令注入未打通**（我的 uiautomator 自动化没找准输入框）→ list/verify/run 的命令级验证待补。
 
 ### F. 其它审阅发现（卫生项）
-- AndroidBenech 仍是独立套件：内核 + CLI + Kotlin 规模策略齐备，但**没有 JNI/运行层**（未接任何 app）；
-- 其树内混入构建产物 AndroidBenech/src/main/cpp/src/memory_guard.o（建议清理）；
-- app 与 AndroidBenech 的 bench 内核**内容逐字节一致**（diff 校验通过），属"同一内核两处消费"，需在文档中显式声明，
+- AndroidBench 仍是独立套件：内核 + CLI + Kotlin 规模策略齐备，但**没有 JNI/运行层**（未接任何 app）；
+- 其树内混入构建产物 AndroidBench/src/main/cpp/src/memory_guard.o（建议清理）；
+- app 与 AndroidBench 的 bench 内核**内容逐字节一致**（diff 校验通过），属"同一内核两处消费"，需在文档中显式声明，
   否则将来两边各改一份就会漂移；
 - 本工作区无 git 提交基线（status 全是未跟踪），"还原"只能依赖文件级备份，建议尽快建立基线。
 
@@ -1193,7 +1193,7 @@ BenchmarkViewModel「内置微基准工作负载 / 内置微基准执行中」�
 
 ### H. git 基线（本轮建立）
 - 提交 c3c4c69：175 文件 / 34,992 行新增；工作区已 clean；
-- .gitignore 补充：AndroidBenech/upstream/（1.2 GB 素材，按 SOURCES_MANIFEST.md 可重新拉取）、
+- .gitignore 补充：AndroidBench/upstream/（1.2 GB 素材，按 SOURCES_MANIFEST.md 可重新拉取）、
   a.out / *.7z / *.fio / ref_zip/ / .buildlogs/；
 - 复核：SPEC2017/（4.1 GB 许可内容）与 .tools/（13 GB SDK）均未入库。
 
@@ -1679,4 +1679,57 @@ keystore*/local.properties（构建必需）。
 ### C. 备注
 - 本轮新出现的 docs/宣传稿.md 是用户放入的 0.1.0-Alpha 宣传稿，已随提交纳入版本库；
 - 本机没有 zip 命令，打包改用 python3 -m zipfile。
+
+
+---
+
+## 2026-10-14 19:1x（第 37 轮）：合规整改（依据外部审查报告，逐条对代码核验后执行）
+
+### A. 报告事实核验（先核验再动手，避免照单执行错项）
+
+| 报告结论 | 核验结果 | 处置 |
+|---|---|---|
+| main manifest 有 MANAGE_EXTERNAL_STORAGE | **属实**（app/src/main/AndroidManifest.xml:6） | 已拆到 lab 源集 |
+| root/su 调用链在 main | **属实**（StorageDetector 4 处 + PrecompiledRunner） | 运行时已由 FEATURE_ROOT_LAB 门控；预编译助手已移出 main（见 B.4） |
+| 16 KB 页对齐已合规 | **属实**（我复核：arm64 PT_LOAD 对齐=16384） | 无需改动；报告中"9 组原生库"表述不准确（jniLibs 只有 1 个，另有 3 个 CMake 引擎库） |
+| IometerAccessSpec.kt:247 有 SPEC 文案 | **属实**（界面标签） | 已改为"内置内核 x/y" |
+| CrystalDiskMark 预设名 | **属实**（DashboardScreen.kt:372 界面字符串） | 已改为"标准访问模式（参考 CrystalDiskMark 模型预设，非其官方测试）" |
+| 缺 LICENSE / NOTICE | **属实** | 已新增 LICENSE（Apache-2.0）、NOTICE、THIRD_PARTY_LICENSES.md |
+| build_fio_arm64.sh 写入 jniLibs | **属实** | 已加 GPL-2.0 义务警示 |
+| ResourceGuard 需 2 倍空间硬阈值 | **不准确**：没有名为 ResourceGuard 的类；纯读路径已有容量夹取、写入路径预分配失败会明确报错（fail-closed） | 仍按建议补了**运行前 2 倍硬阈值**（更早失败、信息更清楚） |
+| 零 INTERNET 权限 | **属实** | 保持，并在「关于」页写明 |
+
+另注：报告未提但实际存在的一处——模块目录拼写 `AndroidBenech`（应为 `AndroidBench`），已一并整改。
+
+### B. 已执行的整改（P0/P1/P2）
+
+1. **权限拆分（P0）**：
+   - `app/src/main/AndroidManifest.xml` 移除 MANAGE_EXTERNAL_STORAGE 与 READ_EXTERNAL_STORAGE；
+     只保留 WRITE_EXTERNAL_STORAGE(maxSdkVersion=28)（API 26~28 导出 Documents 用）与 WAKE_LOCK。
+   - 新增 `app/src/lab/AndroidManifest.xml` 声明 READ + MANAGE（含详细说明为什么这样拆）。
+   - 新增 buildConfigField FEATURE_PUBLIC_STORAGE（standard=false / lab=true），
+     StorageDetector 的"公共存储 (/sdcard)"压测目标据此门控 —— standard 只压应用私有目录。
+   - 实测（aapt2 dump badging）：
+       standard: WRITE(maxSdk28) / READ(maxSdk28，旧系统 WRITE⇒READ 伴生) / WAKE_LOCK —— **无 MANAGE**
+       lab     : READ / **MANAGE** / WRITE(maxSdk28) / WAKE_LOCK
+       两者均**无 INTERNET**。
+2. **许可文件（P0）**：LICENSE（Apache-2.0 全文，取自 /usr/share/common-licenses 避免手抄出错）、
+   NOTICE（含商标汇总声明）、THIRD_PARTY_LICENSES.md（CoreMark/EEMBC、STREAM/McCalpin、tinymembench/MIT
+   全文、fio/GPL-2.0 未打包、SPEC 仅 BYOB、Iometer 仅参考、NDK/AndroidX/Gradle）。
+3. **去商标化与免责声明（P1）**：「设置 → 关于」新增"数据与隐私""商标与非从属声明""结果口径"三段；
+   首页 CrystalDiskMark 文案与内置内核标签已中性化；README 新增第九节（许可/商标/平台合规）。
+4. **预编译二进制不入 standard（加强项）**：把 `libbyob_run.so` 从 `app/src/main/jniLibs/`
+   移到 `app/src/lab/jniLibs/`（BYOB 终端本就只在 lab 出现，FEATURE_EXTERNAL_SPEC 门控）。
+   实测：standard APK 的 `lib/` 里只剩自研引擎 `libdynamo_engine_baseline.so`，**不再内嵌任何预编译可执行文件**。
+   助手构建脚本同步更新安装路径，并复验与源码一致（arm64 `30211e9d…` / x86_64 `52f2226d…`）。
+5. **磁盘空间硬阈值（P2）**：写入类用例运行前要求可用空间 >= 目标体积 **2 倍**，否则直接拒绝运行并给出
+   目标目录与剩余空间，避免逼近满盘触发系统级 ENOSPC。
+6. **拼写整改（P2）**：模块目录 `AndroidBenech` → **AndroidBench**（46 个跟踪文件 git mv），
+   并全量更新文本引用（源码/文档/.gitignore），文本残留 0 处。
+7. **fio GPL 警示（P2）**：`tools/build_fio_arm64.sh` 顶部写明"把 fio 打进 APK 对外分发即触发 GPL-2.0 义务"。
+
+### C. 未做 / 建议后续
+- **su 调用链仍编译进 standard**（仅运行时由 FEATURE_ROOT_LAB 拦截）。彻底剥离需要把
+  StorageDetector 的 root 分支与 BYOB 系统拆成 lab 专属实现，属结构性重构，建议单独一轮做。
+- 报告建议的"首次启动数据说明页"目前落在「设置 → 关于」，如需独立引导页可再加。
 

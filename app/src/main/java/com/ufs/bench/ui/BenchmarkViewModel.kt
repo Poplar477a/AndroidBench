@@ -966,6 +966,26 @@ class BenchmarkViewModel(application: Application) : AndroidViewModel(applicatio
                         )
                     }
 
+                    // 运行前空间硬阈值（合规整改项）：写入类用例要求可用空间 >= 目标体积的 2 倍。
+                    // 为什么是 2 倍：写入过程本身 + 校验读 + 文件系统元数据/预留块都需要余量，
+                    // 逼近满盘时可能触发系统级 ENOSPC，影响的不只是本应用。
+                    // 不满足时**直接拒绝运行**（fail-closed），不做部分写入。
+                    val needBytes = spec.fileSizeMb.toLong() * 1024L * 1024L
+                    val availBytes = readAvailableDiskBytes(target.path)
+                    if (needBytes > 0 && availBytes < needBytes * 2) {
+                        _uiState.update {
+                            it.copy(
+                                benchmarkState = BenchmarkState.ERROR,
+                                statusMessage = String.format(
+                                    "空间不足，已中止：本用例需写入 %d MB（要求可用空间 >= %d MB），" +
+                                        "当前目标目录仅剩 %d MB（%s）。请清理空间或改用更小的规格。",
+                                    spec.fileSizeMb, spec.fileSizeMb * 2,
+                                    availBytes / (1024 * 1024), target.path)
+                            )
+                        }
+                        return@launch
+                    }
+
                     val prepOk = engine.prepareTargetFile(testFile, spec.fileSizeMb, spec.cacheMode.code)
                     if (!prepOk) {
                         _uiState.update {

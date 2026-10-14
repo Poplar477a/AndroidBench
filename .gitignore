@@ -37,9 +37,9 @@ keystore/
 *.jks
 *.keystore
 # ---- 2026-10-14 基线补充（Lead 审计）----
-# 上游源码采集区：1.2 GB，来源与提交号记录在 AndroidBenech/upstream/SOURCES_MANIFEST.md，
+# 上游源码采集区：1.2 GB，来源与提交号记录在 AndroidBench/upstream/SOURCES_MANIFEST.md，
 # 属"素材"而非本仓库产物，不入库（需要时按 manifest 重新拉取即可）。
-AndroidBenech/upstream/
+AndroidBench/upstream/
 # 散落的过程产物
 a.out
 *.7z

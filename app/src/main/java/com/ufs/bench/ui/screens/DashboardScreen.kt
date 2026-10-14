@@ -369,7 +369,7 @@ fun DashboardScreen(
 
         // 4. 标准模式预设方案（CDM 风格：先读后写，完整双向结果）
         Text(
-            text = "CrystalDiskMark 标准套餐（先测读后测写）",
+            text = "标准访问模式（参考 CrystalDiskMark 模型预设，先测读后测写；非其官方测试）",
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
         )

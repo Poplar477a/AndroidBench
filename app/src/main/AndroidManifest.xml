@@ -1,9 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- 存储权限边界（2026-10 合规整改，详见 app/src/lab/AndroidManifest.xml 的说明）：
+         · standard 版**不申请** MANAGE_EXTERNAL_STORAGE / READ_EXTERNAL_STORAGE ——
+           基准测试类应用申请 all-files access 会被 Google Play 与国内各商店直接驳回；
+           压测目标限制在应用私有目录（filesDir / getExternalFilesDir），同样在 UFS 分区且支持 O_DIRECT。
+         · WRITE_EXTERNAL_STORAGE 仅保留 maxSdkVersion=28：API 26~28 上把结果导出到公共
+           Documents 需要它（API 29+ 走 MediaStore，不需要任何存储权限）。
+         · 两个宽泛权限只在 lab（实验室）构建里声明。 -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <application

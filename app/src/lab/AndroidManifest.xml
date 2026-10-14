@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  lab（实验室）flavor 专属权限。
+  ============================================================================
+  为什么单独放这里：
+    All files access（MANAGE_EXTERNAL_STORAGE）在 Google Play 与国内各应用商店只
+    放给"文件管理器 / 备份还原 / 安全类"等核心功能不可或缺的应用；**基准测试类应用
+    申请该权限会被直接驳回**。因此：
+      · standard（上架/商用版）：不申请任何宽泛存储权限，压测目标限制在应用私有目录
+        （filesDir / getExternalFilesDir），分区存储下同样挂在 UFS 分区且支持 O_DIRECT；
+      · lab（开发者/实验室版）：保留该权限，用于公共目录、裸盘与自定义路径等进阶测试。
+    READ_EXTERNAL_STORAGE 同理（仅 lab 需要读公共目录里的组件包；standard 走 SAF）。
+  ============================================================================
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" />
+
+</manifest>
+

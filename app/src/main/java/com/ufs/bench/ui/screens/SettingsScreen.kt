@@ -268,6 +268,29 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(modifier = Modifier.height(10.dp))
+                // 合规声明（2026-10 整改）：隐私、商标非从属、上游基准的非官方性质。
+                // 上架审核与开源发布都会看这些项，随包放在「关于」页。
+                Text(
+                    text = listOf(
+                        "数据与隐私：",
+                        "· 本应用未申请网络权限（清单中没有 INTERNET），全部测量与历史记录只在本机完成",
+                        "· 读取 CPU 拓扑与存储设备信息仅用于本机适配与结果标注，不采集、不上传任何数据",
+                        "· 结果文件导出到公共 Documents 由你自行管理，可随时删除",
+                        "",
+                        "商标与非从属声明：",
+                        "· UFS 是 JEDEC 的注册商标；CoreMark 是 EEMBC 的注册商标；SPEC / SPEC CPU 是 SPEC 的注册商标；",
+                        "  Android 是 Google LLC 的商标；CrystalDiskMark 是 Noriyuki Miyazaki 的产品名",
+                        "· 本工具为独立实现的测量工具，与上述任何组织均无隶属、赞助或背书关系",
+                        "",
+                        "结果口径：",
+                        "· 内置基准为上游源码的裁剪移植（CoreMark 经移植包装、STREAM 为变体内核、tinymembench 裁剪移植）",
+                        "· 结果一律表述为「相对本机自标定基线」的本地测量，不代表任何官方成绩，也未经官方认证",
+                        "· 项目以 Apache-2.0 许可发布；第三方组件版权与许可见仓库 NOTICE 与 THIRD_PARTY_LICENSES.md"
+                    ).joinToString("\n"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
 

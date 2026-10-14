@@ -12,5 +12,5 @@
 相关但不在本目录：
 - 仓库布局与 SPEC 组件流水线：见根 README 第七节
 - 组件流水线用法：见 tools/spec2017/README.md
-- AndroidBenech 套件：见 AndroidBenech/docs/（ARCHITECTURE / BENCHMARK_CATALOG / SCALE_MANAGEMENT / IMPLEMENTATION_LOG）
+- AndroidBench 套件：见 AndroidBench/docs/（ARCHITECTURE / BENCHMARK_CATALOG / SCALE_MANAGEMENT / IMPLEMENTATION_LOG）
 

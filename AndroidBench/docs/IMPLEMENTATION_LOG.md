@@ -72,13 +72,13 @@
 
 | 消费方 | 路径 | 用途 |
 |---|---|---|
-| AndroidBenech（本套件） | src/main/cpp/{include,src/bench,tools} | 独立基准套件的内核层 + 开发期 CLI |
+| AndroidBench（本套件） | src/main/cpp/{include,src/bench,tools} | 独立基准套件的内核层 + 开发期 CLI |
 | UFS Benchmark App | app/src/main/cpp/bench/（含 builtin_bench.cpp 桥接层） | 以「内置基准」形态接入，走 JNI 与三档强度挡位 |
 
 约定：
 1. **内核源码（bench_api.h / bench_common.c / coremark / stream / tinymembench）只有一份事实来源**，
-   当前以 AndroidBenech 侧为源；改动后必须同步 App 侧并重新 diff 校验，禁止两边各改一份；
+   当前以 AndroidBench 侧为源；改动后必须同步 App 侧并重新 diff 校验，禁止两边各改一份；
 2. 两边的差异只允许存在于**桥接/驱动层**（App 的 builtin_bench.cpp 负责把 RunConfig 映射成三档参数；
-   AndroidBenech 的 bench_cli.c 负责命令行驱动）；
+   AndroidBench 的 bench_cli.c 负责命令行驱动）；
 3. App 侧构建脚本会为 tinymembench 的 aarch64 汇编生成一份去掉 .func/.endfunc 的派生副本
    （clang 集成汇编器不认这两条 GNU as 指示符），上游 .S 保持逐字节不变。

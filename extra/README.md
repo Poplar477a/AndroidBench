@@ -1,7 +1,7 @@
 # extra —— 与主工程无关或已归档的文件
 
 本目录用于把项目根目录"多余的东西"集中到一处。主工程只依赖这些以外的内容：
-app/ AndroidBenech/ tools/ docs/ gradle/ dist/ 以及构建配置与 keystore。
+app/ AndroidBench/ tools/ docs/ gradle/ dist/ 以及构建配置与 keystore。
 
 ## 内容说明
 
@@ -21,7 +21,7 @@ app/ AndroidBenech/ tools/ docs/ gradle/ dist/ 以及构建配置与 keystore。
 
 | 条目 | 原因 |
 |---|---|
-| app/ AndroidBenech/ tools/ docs/ gradle/ dist/ | 主工程与交付物 |
+| app/ AndroidBench/ tools/ docs/ gradle/ dist/ | 主工程与交付物 |
 | build.sh build.gradle.kts settings.gradle.kts gradle.properties | 构建入口 |
 | .tools/ | Android SDK / NDK / JDK / Gradle（build.sh 里写死了 .tools/jdk-17 等路径） |
 | .gradle/ | Gradle 构建缓存 |

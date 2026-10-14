@@ -141,7 +141,7 @@ object PresetSuites {
         )
     )
 
-    // 4. 内置基准（2026-10 更换：内核全部裁剪自 AndroidBenech/upstream 的**官方上游源码**，
+    // 4. 内置基准（2026-10 更换：内核全部裁剪自 AndroidBench/upstream 的**官方上游源码**，
     //    不再使用"仿真/模拟"实现）。每个基准都带上游自带的正确性校验，不通过不计成绩；
     //    强度挡位（低性能 / 常规 / 拓展）由各基准自己的参数决定（见 bench/builtin_bench.cpp 的 planFor）。
     //    展示成绩时必须同屏带上 BASELINE_RATIO_DISCLAIMER：比值是"相对本机基线"，不是官方分数。

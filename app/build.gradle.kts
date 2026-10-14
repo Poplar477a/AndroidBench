@@ -73,6 +73,9 @@ android {
 
             buildConfigField("Boolean", "FEATURE_ROOT_LAB", "false")
 
+            // 上架版：不申请 MANAGE_EXTERNAL_STORAGE，压测目标只允许应用私有目录
+            buildConfigField("Boolean", "FEATURE_PUBLIC_STORAGE", "false")
+
             buildConfigField("Boolean", "FEATURE_EXTERNAL_SPEC", "false")
 
         }
@@ -86,6 +89,9 @@ android {
             manifestPlaceholders["appName"] = "UFS Benchmark 极客实验室"
 
             buildConfigField("Boolean", "FEATURE_ROOT_LAB", "true")
+
+            // 实验室版：保留 all-files access，可用公共目录 / 裸盘 / 自定义路径
+            buildConfigField("Boolean", "FEATURE_PUBLIC_STORAGE", "true")
 
             buildConfigField("Boolean", "FEATURE_EXTERNAL_SPEC", "true")
 

@@ -1,5 +1,5 @@
 # ============================================================================
-#  AndroidBenech —— 原生基准内核构建脚本
+#  AndroidBench —— 原生基准内核构建脚本
 #
 #  交付形态：libandroidbench.so（由 Kotlin/JNI 调用；docs/ARCHITECTURE.md 明确否决
 #  了"把 ELF 塞进 APK 再 exec"的旧模式）。

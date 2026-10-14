@@ -73,9 +73,15 @@ object StorageDetector {
         context.getExternalFilesDir(null)?.let { dir ->
             targets.add(createTarget("应用外部存储目录", dir, true, mounts, emulator))
         }
-        val ext = Environment.getExternalStorageDirectory()
-        if (ext != null && ext.exists()) {
-            targets.add(createTarget("公共存储 (/sdcard, FUSE封装)", ext, false, mounts, emulator))
+        // 公共存储只在上架版**不做**为压测目标：
+        // standard 构建不声明 MANAGE_EXTERNAL_STORAGE，写入 /sdcard 会被分区存储直接拒绝；
+        // 私有目录同样挂在 UFS 分区且支持 O_DIRECT，测量口径不受影响。
+        // （lab 构建 FEATURE_PUBLIC_STORAGE=true，保留公共目录/裸盘等进阶目标。）
+        if (com.ufs.bench.BuildConfig.FEATURE_PUBLIC_STORAGE) {
+            val ext = Environment.getExternalStorageDirectory()
+            if (ext != null && ext.exists()) {
+                targets.add(createTarget("公共存储 (/sdcard, FUSE封装)", ext, false, mounts, emulator))
+            }
         }
         return targets
     }

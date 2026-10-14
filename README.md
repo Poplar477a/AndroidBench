@@ -163,12 +163,12 @@ CoreTopologyDetector 读 /proc/cpuinfo 的 CPU part：所有核同构且非小�
 |---|---|---|
 | app/ | UFS Benchmark 应用（Kotlin/Compose + NDK C/C++/ASM） | 是 |
 | app/src/main/cpp/bench/ | 内置基准内核层（CoreMark / STREAM / tinymembench，裁剪自上游） | 是 |
-| AndroidBenech/ | 独立的 Android 基准套件（内核层 + CLI + Kotlin 规模策略） | 是（upstream/ 素材除外） |
+| AndroidBench/ | 独立的 Android 基准套件（内核层 + CLI + Kotlin 规模策略） | 是（upstream/ 素材除外） |
 | tools/spec2017/ | SPEC CPU2017 → Android 组件包 构建流水线 | 是 |
 | docs/ | 需求/契约/证据文档（含 verified-facts.md 逐轮实测记录） | 是 |
 | .evidence/ | 过程证据（截图、日志、构建产物、组件包） | 否（.gitignore） |
 | SPEC2017/ | SPEC CPU2017 安装介质解包树（商业许可内容） | 否（.gitignore） |
-| AndroidBenech/upstream/ | 上游源码采集区（1.2 GB，按 SOURCES_MANIFEST.md 可重建） | 否（.gitignore） |
+| AndroidBench/upstream/ | 上游源码采集区（1.2 GB，按 SOURCES_MANIFEST.md 可重建） | 否（.gitignore） |
 | .tools/ | Android SDK / NDK | 否（.gitignore） |
 
 ### 2. SPEC2017 → 组件包（BYOB）流水线
@@ -251,4 +251,47 @@ jniLibs 里的（实测 935 KB → 139 KB），这属正常，**不能**用"字�
 - 两个坑（已记档）：
   1) 圆形遮罩必须用 setClip(Ellipse) + drawImage —— AlphaComposite.SrcIn + fill 实测不生效；
   2) release APK 会缩短资源文件名，核验图标要看 aapt2 dump resources 并比对两包 PNG 体积，不能按名找。
+
+
+---
+
+## 九、 许可、商标与合规（2026-10 整改）
+
+### 1. 许可
+
+- 项目自身：**Apache License 2.0**（见 LICENSE）；
+- 第三方组件与上游基准的版权/许可集中列示在 **NOTICE** 与 **THIRD_PARTY_LICENSES.md**；
+- **本仓库与发布 APK 均不含 fio 二进制**（GPL-2.0）。如需自行编入，请先读 `tools/build_fio_arm64.sh`
+  顶部的 GPL-2.0 义务警示：把 fio 打进 APK 对外分发会要求整个 APK 满足 GPL-2.0。
+- **本仓库不含 SPEC 的任何源码、输入集与参考输出**（商业许可内容，.gitignore 已排除）。
+  只提供 BYOB 通路：用户用自备介质编译组件包后导入。
+
+### 2. 上游基准的使用口径
+
+| 内置基准 | 上游 | 本项目用法与口径 |
+|---|---|---|
+| CoreMark（1001） | EEMBC | 上游算法逐字节保留 + Android 移植包装；EEMBC 协议禁止在衍生副本上使用 CoreMark 商标，故结果表述为"基于 EEMBC CoreMark 源码的本地测量"，不称官方成绩、不使用认证徽标 |
+| STREAM（1002） | John D. McCalpin | **变体内核**（bench_alloc / pad 哨兵 / 十进制 MB/s）；上游要求修改后不得直称 "STREAM benchmark results"，故界面统一写"基于 STREAM 变体内核的持续带宽测量" |
+| tinymembench（1003） | Siarhei Siamashka | MIT，裁剪移植；MIT 全文见 THIRD_PARTY_LICENSES.md |
+
+内置基准的比值统一为"相对**本机自标定基线**"，界面同屏展示免责声明，不与任何官方公布分数比较。
+
+### 3. 商标
+
+UFS® 属 JEDEC；CoreMark® 属 EEMBC；SPEC® / SPEC CPU® 属 SPEC；Android™ 属 Google LLC；
+CrystalDiskMark 属 Noriyuki Miyazaki。本项目为独立实现，**与上述组织无隶属、赞助或背书关系**；
+不复用任何官方徽标，界面中的相关名称仅作事实性指代。完整声明见 NOTICE 与 App 内「设置 → 关于」。
+
+### 4. 平台合规（应用商店）
+
+- **存储权限边界**：standard（上架版）**不申请** `MANAGE_EXTERNAL_STORAGE` 与
+  `READ_EXTERNAL_STORAGE` —— 基准测试类应用申请 all-files access 会被 Google Play 与国内各商店直接驳回；
+  压测目标限定在应用私有目录（`filesDir` / `getExternalFilesDir`，同样在 UFS 分区且支持 O_DIRECT）。
+  两个宽泛权限只在 **lab** 构建（`app/src/lab/AndroidManifest.xml`）中声明。
+  `WRITE_EXTERNAL_STORAGE` 仅保留 `maxSdkVersion=28`：API 26~28 把结果导出到公共 Documents 需要它，
+  API 29+ 走 MediaStore 不需要任何存储权限。
+- **零网络**：清单中没有 `INTERNET` 权限，数据全部本地处理。
+- **16 KB 页对齐**：arm64 原生库 `PT_LOAD` 对齐实测为 16384（Android 15+ 要求），已合规。
+- **磁盘空间硬阈值**：写入类用例运行前要求可用空间 ≥ 目标体积的 **2 倍**，不满足直接拒绝运行（fail-closed），
+  避免逼近满盘触发系统级 ENOSPC。
 

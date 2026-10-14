@@ -6,7 +6,7 @@
  *   上游 MD5：9b2be2cd29b8a4c405491935c0562917
  *   版权    ：Copyright © 2016 Siarhei Siamashka <siarhei.siamashka@gmail.com>
  *              MIT 许可；完整许可证原文见下方上游文件头。
- *   用途    ：AndroidBenech tinymembench 内核在 __aarch64__ 下的 NEON 拷贝/填充例程。
+ *   用途    ：AndroidBench tinymembench 内核在 __aarch64__ 下的 NEON 拷贝/填充例程。
  *   注意    ：文件顶层自带 #ifdef __aarch64__，x86_64 上预处理为空文件，
  *              构建系统可以无条件将其加入源文件列表。
  */

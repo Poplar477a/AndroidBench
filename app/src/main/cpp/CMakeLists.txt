@@ -89,7 +89,7 @@ set(_DYNAMO_CC_ORIGIN "NDK ${_DYNAMO_NDK_VER} 内置 Clang")
 
 
 # ============================================================================
-#  内置基准内核层 —— 来自 AndroidBenech/upstream 的裁剪移植
+#  内置基准内核层 —— 来自 AndroidBench/upstream 的裁剪移植
 #   · CoreMark 上游算法文件逐字节未改：用 -Dmain=coremark_cli_main 把它的 main() 变成
 #     普通函数。这些定义必须是 PRIVATE，绝不能泄漏到 App 其它源文件。
 #   · tinymembench 的 aarch64-asm.S 按 GNU as 写，clang 集成汇编器不认 .func/.endfunc，

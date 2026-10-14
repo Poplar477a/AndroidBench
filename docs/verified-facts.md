@@ -1733,3 +1733,35 @@ keystore*/local.properties（构建必需）。
   StorageDetector 的 root 分支与 BYOB 系统拆成 lab 专属实现，属结构性重构，建议单独一轮做。
 - 报告建议的"首次启动数据说明页"目前落在「设置 → 关于」，如需独立引导页可再加。
 
+
+---
+
+## 2026-10-14 22:4x（第 38 轮）：仓库改名为 AndroidBench + 转公开 + 发布首个预发行版
+
+### A. 公开前安全扫描（先扫再开放）
+- 全历史**敏感文件名**扫描（keystore/.jks/local.properties/.env/token/secret/credential/.p12/.pem/id_rsa）：0 命中；
+- 全历史**内容特征**扫描：ghp_/gho_ 令牌、storePassword=、keyPassword=、PRIVATE KEY、Bearer、
+  api_key=… 均 0 命中；
+- 历史中**无 SPEC 许可内容**；最大 blob 是用户自带的 docs/如何测试顺序写入.zip（2.9 MB），
+  其余为两个沙箱助手（~940 KB）与图标源图（128 KB）—— 远低于 GitHub 限制。
+
+### B. 仓库整理（公开前）
+- 把与本项目无关的 extra/qpm-*.cmd **移出版本库**（本地保留，.gitignore 排除；extra/README.md 同步说明）；
+- README 重写头部：加许可证/发行/平台/网络四项徽章，并把"基于 FIO 与 Iometer 架构移植"这种
+  容易被误读为"包含其代码"的措辞，改为"参考 FIO 与 Iometer 的测试模型**独立实现**"＋非从属声明；
+- 新增 CHANGELOG.md（0.1.0-Alpha 的能力清单 + 已知限制）。
+
+### C. 改名与开放
+- 仓库：Beta → **AndroidBench**（更贴合项目身份；本地 remote 自动更新为
+  https://github.com/Poplar477a/AndroidBench.git）；
+- 可见性：**PUBLIC**；
+- 描述与主题：补了描述 + 8 个 topic（android/benchmark/storage/ufs/fio/iometer/coremark/stream）。
+
+### D. 首个预发行版
+- 标签 v0.1.0-Alpha（附注标签，已推送）；
+- Release：**预发行**，标题「v0.1.0-Alpha · 首个预发行版」，资产三个：
+  UFSBenchmark-0.1.0-Alpha-standard.apk（1,810,657 B，sha256 e18e435f…）、
+  UFSBenchmark-0.1.0-Alpha-lab.apk（1,995,318 B，sha256 5f17f531…）、SHA256SUMS.txt；
+- Release 页：https://github.com/Poplar477a/AndroidBench/releases/tag/v0.1.0-Alpha
+- 说明（如实）：自签名构建、非商店分发；su 调用链仍编译进 standard；仅两台真机 + 模拟器验证过。
+

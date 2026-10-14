@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">UFS Benchmark</string>
+    <!-- 顶栏品牌：与 app_name 一致 -->
+    <string name="app_bar_title">UFS Benchmark</string>
+    <!-- 底部导航页签：与 ui/MainActivity.kt 的五个页面一一对应 -->
+    <string name="tab_home">首页</string>
+    <string name="tab_running">测试中</string>
+    <string name="tab_custom_test">自定义测试</string>
+    <string name="tab_reports">历史报告</string>
+    <string name="tab_settings">设置</string>
+</resources>

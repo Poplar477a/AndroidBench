@@ -1,0 +1,46 @@
+*.dat
+*.tmp
+*.o
+dynamo_bench
+.gradle/
+build/
+app/build/
+# 构建串行化锁文件
+.build.lock
+
+# CMake 构建缓存：内部记录了本机绝对路径，不能入库或打包
+.cxx/
+app/.cxx/
+local.properties
+.idea/
+*.iml
+.tools/
+
+# 过程证据与打包暂存：含 logcat、设备信息、构建记录，绝不入库
+.evidence/
+.deliver/
+
+# SPEC CPU2017 用户自备源码与设备端构建产物：许可内容，绝不入库/打包
+.spec2017-src/
+.spec2017-out/
+
+# SPEC CPU2017 商业许可内容与其派生目录（含 ISO、整备树、输入、原始输出、工具链、校验树）
+SPEC2017/
+.spec2017*/
+*.iso
+
+# Release 签名口令，绝不入库
+keystore.properties
+keystore/
+*.jks
+*.keystore
+# ---- 2026-10-14 基线补充（Lead 审计）----
+# 上游源码采集区：1.2 GB，来源与提交号记录在 AndroidBenech/upstream/SOURCES_MANIFEST.md，
+# 属"素材"而非本仓库产物，不入库（需要时按 manifest 重新拉取即可）。
+AndroidBenech/upstream/
+# 散落的过程产物
+a.out
+*.7z
+*.fio
+ref_zip/
+.buildlogs/

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      日间（浅色）窗口主题。
+      深色对应在 res/values-night/themes.xml —— 二者同名，由系统深色模式切换，
+      这样冷启动的窗口底色就不会再固定为深色（浅色模式下会闪一次黑屏）。
+      windowLightStatusBar 需要 API 23，minSdk 26 安全；
+      导航栏图标明暗由 ui/theme/Theme.kt 的 SystemBarsEffect 在运行时对齐。
+    -->
+    <style name="Theme.UfsStorageBenchmark" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:statusBarColor">@color/window_status_bar</item>
+        <item name="android:navigationBarColor">@color/window_navigation_bar</item>
+        <item name="android:windowLightStatusBar">true</item>
+    </style>
+</resources>

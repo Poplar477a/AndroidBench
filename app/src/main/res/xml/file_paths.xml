@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- Android 9- 直接写公共「下载」目录时，经 FileProvider 授权分享 -->
+    <external-path name="public_downloads" path="Download/" />
+    <!-- 兜底：应用外部目录 -->
+    <external-files-path name="reports" path="reports/" />
+    <!-- 兜底：私有缓存 -->
+    <cache-path name="shots" path="shots/" />
+</paths>

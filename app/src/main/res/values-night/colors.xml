@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 冷启动窗口配色：与 ui/theme/Color.kt 的 DarkColorScheme 对齐 -->
+    <color name="window_background">#0E1416</color>
+    <color name="window_status_bar">#0E1416</color>
+    <color name="window_navigation_bar">#1B2124</color>
+</resources>

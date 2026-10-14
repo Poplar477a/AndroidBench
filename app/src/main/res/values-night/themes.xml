@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 夜间（深色）窗口主题：与 ui/theme/Color.kt 的 DarkColorScheme 对齐。 -->
+    <style name="Theme.UfsStorageBenchmark" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/window_background</item>
+        <item name="android:statusBarColor">@color/window_status_bar</item>
+        <item name="android:navigationBarColor">@color/window_navigation_bar</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

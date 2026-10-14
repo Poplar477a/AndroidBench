@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 自适应图标背景：与应用深色主题一致 -->
+    <color name="ic_launcher_background">#121421</color>
+
+    <!-- 冷启动窗口配色：与 ui/theme/Color.kt 的 LightColorScheme 对齐，
+         避免 Compose 首帧之前出现固定深色闪屏（旧版 themes.xml 的 #121212）。 -->
+    <color name="window_background">#F6FAFC</color>
+    <color name="window_status_bar">#F6FAFC</color>
+    <color name="window_navigation_bar">#EAEFF1</color>
+</resources>

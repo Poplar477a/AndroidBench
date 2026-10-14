@@ -291,17 +291,3 @@ jniLibs 里的（实测 935 KB → 139 KB），这属正常，**不能**用"字�
 UFS® 属 JEDEC；CoreMark® 属 EEMBC；SPEC® / SPEC CPU® 属 SPEC；Android™ 属 Google LLC；
 CrystalDiskMark 属 Noriyuki Miyazaki。本项目为独立实现，**与上述组织无隶属、赞助或背书关系**；
 不复用任何官方徽标，界面中的相关名称仅作事实性指代。完整声明见 NOTICE 与 App 内「设置 → 关于」。
-
-### 4. 平台合规（应用商店）
-
-- **存储权限边界**：standard（上架版）**不申请** `MANAGE_EXTERNAL_STORAGE` 与
-  `READ_EXTERNAL_STORAGE` —— 基准测试类应用申请 all-files access 会被 Google Play 与国内各商店直接驳回；
-  压测目标限定在应用私有目录（`filesDir` / `getExternalFilesDir`，同样在 UFS 分区且支持 O_DIRECT）。
-  两个宽泛权限只在 **lab** 构建（`app/src/lab/AndroidManifest.xml`）中声明。
-  `WRITE_EXTERNAL_STORAGE` 仅保留 `maxSdkVersion=28`：API 26~28 把结果导出到公共 Documents 需要它，
-  API 29+ 走 MediaStore 不需要任何存储权限。
-- **零网络**：清单中没有 `INTERNET` 权限，数据全部本地处理。
-- **16 KB 页对齐**：arm64 原生库 `PT_LOAD` 对齐实测为 16384（Android 15+ 要求），已合规。
-- **磁盘空间硬阈值**：写入类用例运行前要求可用空间 ≥ 目标体积的 **2 倍**，不满足直接拒绝运行（fail-closed），
-  避免逼近满盘触发系统级 ENOSPC。
-

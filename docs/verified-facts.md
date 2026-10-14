@@ -1559,3 +1559,42 @@ capset → rlimits → chdir → about-execve` ✓
 模拟器 1080×1920 竖屏、MuMu 侧为 1920×1080 横屏 —— 自动化脚本里的滑动坐标必须按实际屏幕取，
 本轮就因为用错坐标导致"设置页滚不动"的假象（不是应用问题）。
 
+
+---
+
+## 2026-10-14 15:0x（第 34 轮）：最终出包与源码整理（收尾）
+
+### A. 出包（clean 全量构建）
+
+    ./build.sh --max-workers=4 clean
+    ./build.sh --max-workers=4 assembleStandardRelease assembleLabRelease
+
+结果：BUILD SUCCESSFUL、**0 告警**；产物入 dist/：
+
+    dist/UFSBenchmark-0.1.0-Alpha-standard.apk
+    dist/UFSBenchmark-0.1.0-Alpha-lab.apk
+    dist/SHA256SUMS.txt     # 随包校验
+    dist/README.md
+
+说明（如实）：Android 构建**非字节可复现** —— 同一份源码两次构建，APK 体积与 sha256 会略有差异
+（本轮 2001282 → 2001302 字节）。因此校验一律以随包的 SHA256SUMS.txt 为准。
+
+### B. 源码整理（抓到一处会造成实际损失的遗漏）
+
+**tools/spec2017/ 整个目录此前没被跟踪** —— 根因是 .gitignore 里的 SPEC2017/ 在 Windows 文件系统上
+按**大小写不敏感**匹配，把 tools/spec2017/（SPEC2017 流水线脚本：build_components.py /
+prepare_sources.sh / build_bench.sh / parse_object.pl / required_files.py / README.md）一并忽略了。
+后果：换机 clone 后 README 里写的流水线脚本会全部丢失。
+修法：改为根锚定 /SPEC2017/（只忽略顶层解包树），并把 6 个脚本重新纳入版本库。
+
+其余整理项：
+- docs/README.md 索引补上 byob-打包规范.md；
+- 复核 .gitignore：.tools/、ref_zip/、dist/、app/build/、keystore*/、*.fio、*.7z、.deliver/、
+  .buildlogs/、.spec2017-*/ 均按预期忽略；
+- 无未跟踪且未忽略的游离文件（git status --porcelain 为空）。
+
+### C. 最终状态
+- 已跟踪文件 180 → 186（+6 个流水线脚本）；
+- 工作区干净；交付物为 dist 下两个签名 APK（v2 方案，证书 CN=UFS Benchmark…，指纹 e79e1ba0…）
+  与 SHA256SUMS.txt；版本 0.1.0-Alpha（versionCode 2）。
+

@@ -143,6 +143,12 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+        // 必须解包原生库：BYOB 沙箱助手（jniLibs/libbyob_run.so）需要以**真实文件**形式
+        // 存在并可执行。AGP 默认 extractNativeLibs=false（.so 留在 APK 内由动态加载器直读），
+        // 那样 nativeLibraryDir 里没有文件，运行器会报「未找到沙箱助手」。
+        jniLibs {
+            useLegacyPackaging = true
+        }
     }
 }
 

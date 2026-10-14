@@ -1297,3 +1297,57 @@ BenchmarkViewModel「内置微基准工作负载 / 内置微基准执行中」�
 反引号被 bash 当作命令替换执行，导致写入内容出现空洞（`-DSPEC: command not found`）。
 正确做法是用**引号 heredoc**（`<<'EOF'`）写含反引号/`\$` 的文本。
 
+
+---
+
+## 2026-10-14 13:2x（第 28 轮）：二进制测试（BYOB）功能**真机跑通** —— 一路修掉 4 个真 bug
+
+目标：用 SPEC2017 介质编出的组件包，在 arm64 真机（红米 33ed7dff）上走完
+「导入 → 准入 → 沙箱执行 → 官方参考判分」。结果：
+
+    519.lbm_r  exit/signal 0/0   wall 6.246 s   max_rss 422080 KB
+               oracle 通过  参考 15 行 / 实测 15 行，比对 15 行，容差 abs=1e-7 rel=1e-4：一致
+    505.mcf_r  exit/signal 0/0   wall 11.722 s  max_rss 378732 KB
+               oracle 通过  参考 56 行 / 实测 56 行，比对 56 行，容差 abs=1e-7 rel=1e-4：一致
+    沙箱九步（stderr 原样）：child:1-before-netns → 2-netns-done → 3-setgroups-done →
+              4-setgid-done → 5-setuid-done → 6-capset-done → 7-rlimits-done →
+              8-chdir-done → 9-about-execve
+
+### 过程中定位并修掉的 4 个真 bug（都有实测证据，不是猜测）
+
+1. **沙箱助手根本没落地** —— AGP 默认 `extractNativeLibs=false`，`libbyob_run.so` 留在 APK 内，
+   设备 `lib/arm64/` 目录是**空的**，运行器找不到可执行文件 → 两台设备都表现为
+   `exit -1 / wall 0.000 s / max_rss 0`（**不是 ABI 问题**：x86_64 模拟器与 arm64 真机同样失败）。
+   修法：`packaging { jniLibs { useLegacyPackaging = true } }`（见 app/build.gradle.kts）。
+
+2. **沙箱降权到固定 uid 导致 chdir 失败** —— 助手默认 `BYOB_UID/GID = 10123`（早期 bring-up
+   把包放 `/data/local/tmp` 时可用）；而 BYOB 组件包在**应用私有目录**（0700，属主应用 uid），
+   降权后 `chdir(workdir)` 失败 → 助手 `_exit(128)`。实测 stderr 停在 `child:7-rlimits-done` 即此因。
+   修法：`PrecompiledRunner` 显式传 `BYOB_UID=<应用 uid> BYOB_GID=<Os.getegid()>`；
+   netns/seccomp/capset/rlimits 四层隔离不受影响（仅进程身份改为调用方）。
+
+3. **终端 run 阻塞主线程 → ANR** —— `doRun` 里 `PrecompiledRunner.run` 会
+   `ProcessBuilder(...).waitFor(...)` 阻塞，而它由 `rememberCoroutineScope` 启动、默认在
+   `Dispatchers.Main`；实测弹出「UFS Benchmark 没有响应」。
+   修法：`withContext(Dispatchers.IO) { PrecompiledRunner.run(ctx, id) }`。
+
+4. **mcf 判分拿错文件** —— 组件包 `stdout_file` 原为 `mcf.out`，而 mcf **自己**会写同名文件
+   （仅 1 行目标值），运行器因此不落盘捕获的 stdout，判分拿 1 行数值去比官方 56 行报告 → 误判不符。
+   修法：`stdout_file` 改为程序不使用的 `report.out`（流水线内已注释说明）；修后 56/56 行一致。
+
+### 无界面运行入口（本轮实测可用）
+
+    adb shell am force-stop com.ufs.bench.lab          # 必须先停：extra 只在 onCreate 处理
+    adb shell am start -n com.ufs.bench.lab/com.ufs.bench.ui.MainActivity --es spec_run <id>
+    adb shell cat /sdcard/Android/data/com.ufs.bench.lab/files/byob/<id>.result.txt
+
+两个坑：① 包名是 `com.ufs.bench.lab` 而**类命名空间是 `com.ufs.bench`**（写错会 Error type 3）；
+② Activity 在栈顶时 intent 只投递不重建，必须先 force-stop。
+
+### 组件包参数约定（本轮固化）
+
+| 组件 | 输入位置 | command_args | stdout_file | 说明 |
+|---|---|---|---|---|
+| 519.lbm_r | 包根目录 | `20 reference.dat 0 1 100_100_130_cf_a.of` | `lbm.out` | 程序会把文件名回显进输出，故用裸名 + 输入放运行目录根（SPEC 官方姿势） |
+| 505.mcf_r | data/input/ | `data/input/inp.in` | `report.out` | 运行器会把 data/ 开头的参数映射为包内绝对路径 |
+

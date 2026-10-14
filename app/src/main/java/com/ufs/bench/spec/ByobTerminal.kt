@@ -175,7 +175,10 @@ object ByobTerminal {
 
     private suspend fun doRun(ctx: Context, id: String) {
         append("开始执行（沙箱）…")
-        val outcome = PrecompiledRunner.run(ctx, id)
+        // 必须在 IO 线程执行：PrecompiledRunner 会 ProcessBuilder(...).waitFor(...) 阻塞等结果，
+        // 而本函数由 rememberCoroutineScope 启动、默认跑在 Dispatchers.Main ——
+        // 直接调用会让主线程卡住，测试规模稍大即触发 ANR（2026-10-14 真机实测）。
+        val outcome = withContext(Dispatchers.IO) { PrecompiledRunner.run(ctx, id) }
         appendBlock(outcome.toText())
     }
 

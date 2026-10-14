@@ -49,7 +49,16 @@ object PrecompiledRunner {
             val f = File(dir, a)
             if (a.startsWith("data/") && f.isFile) f.absolutePath else a
         }
+        // BYOB_UID/GID 必须显式指定为**应用自身**的 uid/gid：
+        //   · 沙箱助手默认降权到固定 uid 10123（那是设备端 /data/local/tmp 的旧用法）；
+        //   · 而 BYOB 组件包放在应用私有目录（0700，属主是应用 uid），
+        //     降权到 10123 后 chdir(workdir) 会失败 —— 助手以 _exit(128) 退出，
+        //     表现就是 exit/signal = -1 或 128、wall 0.000 s、无任何输出（2026-10-14 实测定位）。
+        //   指定为应用自身身份后：netns/seccomp/capset/rlimits 四层隔离照旧生效，
+        //   仅"进程身份"从固定沙箱 uid 改为调用方 uid，使其能进入自己的数据目录。
         val inner = "BYOB_WORKDIR=" + dir.absolutePath + " BYOB_WALL=" + cfg.maxSeconds +
+            " BYOB_UID=" + android.os.Process.myUid() +
+            " BYOB_GID=" + android.system.Os.getegid().toInt() +
             " " + helper.absolutePath + " " + binPath + " " + args.joinToString(" ")
         val t0 = System.currentTimeMillis()
         return try {

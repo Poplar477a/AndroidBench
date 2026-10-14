@@ -1246,3 +1246,54 @@ BenchmarkViewModel「内置微基准工作负载 / 内置微基准执行中」�
 1. 导入 519.lbm_r_dyn.zip（58490 字节，含 ignore_line_patterns）→ verify（应显示依赖 3 项 + 通过）；
 2. run 519.lbm_r → 沙箱执行（预期 1~3 s）→ oracle 与 data/output/lbm.out 容差比对 → 给出耗时/退出码/判分明细。
 
+
+---
+
+## 2026-10-14 08:4x（第 27 轮）：SPEC2017 官方口径确认 + 组件流水线 + 仓库整理
+
+### A. 关键发现：官方口径就是 -DSPEC
+起初按"能编过就行"的方式编译，结果与官方参考输出对不上：
+- lbm：多出 `LBM_allocateGrid: allocated 204.5 MByte` 两行（源码里那两行在 `#if !defined(SPEC)` 下）；
+- mcf：输出 20 行、数值轨迹与官方 58 行参考完全不同（官方做了多轮细化，我们一轮就收敛）。
+
+线索来自基准自带的 `Spec/flags.xml`（列出 SPEC 这个宏）。加 `-DSPEC` 后：
+- **lbm 18/18 行与官方参考一致**（唯一差异是 `1.300000e+06` vs `1.300000e+006` 的指数写法，
+  token 级数值比较等价）；
+- **mcf 58/58 行完全一致** —— 还须补 `-DSPEC_HAVE_INTTYPES_H` 并链接基准自带的 `src/spec_qsort/*.c`
+  （官方用 SPEC 自己的 qsort，排序稳定性不同会改变迭代轨迹）。
+
+结论：**漏掉 -DSPEC 会得到"能跑但口径不同"的结果**；上一轮用 ignore_line_patterns 把多出来的行
+过滤掉属于治标，本轮改成按官方口径重编（过滤能力保留，用于时间/分配等本质不确定的行）。
+
+### B. 组件流水线（新增 tools/spec2017/build_components.py）
+流程：**宿主口径自检 → NDK 交叉编译 → 打包 → 清单**。
+- 宿主自检：用宿主 gcc 以同一套宏编译运行，与 `data/<scale>/output/<ref>` 逐行比对
+  （token 级数值容差 1e-4，忽略空行与声明忽略的行）；只有 PASS 才出包 —— 这是"忠实复现官方口径"的证明；
+- 交叉编译：arm64（动态 + 静态）与 x86_64（动态）；
+- 打包：`bin/<exe>` + `data/input/*` + `data/output/<ref>` + `runner.json`
+  （command_args / stdout_file / oracle_rule 容差 / ignore_line_patterns）；
+- 清单：`MANIFEST.json`。
+
+本轮产物：
+
+    519.lbm_r   56 KB   宿主自检 PASS（与官方参考一致，15 行有效行）
+    505.mcf_r  402 KB   宿主自检 PASS（与官方参考一致，56 行有效行）
+
+判分侧同步两处：`ignore_line_patterns` 改为子串语义使用；**空行两侧不参与比对**
+（官方参考与实测输出的空行位置可能不同，空行不承载信息）。
+
+### C. 组件预置（解锁后即可直接跑）
+两个组件包已推送到**红米 33ed7dff** 与**模拟器 127.0.0.1:16384** 的 `/sdcard/Download/`
+并触发媒体扫描，应用内「终端 → 导入组件包(.zip)」即可选中。
+
+### D. 仓库整理
+- 乱码文件名修正：`UFSBenchmark_%E7%B3%BB%E7%BB%9F%E5%B7%A5%E7%A8%8B.md` → `UFSBenchmark_系统工程.md`；
+- 清理构建垃圾：`a.out`（aarch64 残留）、`1`（误重定向产生的 awk 报错文件）；
+- 新增 `tools/spec2017/README.md`（流水线用法与踩坑约定表）、`docs/README.md`（文档索引）；
+- 根 `README.md` 增补第七节：仓库布局 + 组件流水线 + 官方口径说明；
+- 提交：`6fc778c`（整理 + 组件）、`f567292`（修复 README 第七节）。
+
+**整理时踩的坑（记录以免重犯）**：用 `printf "%s\n" "<含反引号的 Markdown>"` 写文件时，
+反引号被 bash 当作命令替换执行，导致写入内容出现空洞（`-DSPEC: command not found`）。
+正确做法是用**引号 heredoc**（`<<'EOF'`）写含反引号/`\$` 的文本。
+

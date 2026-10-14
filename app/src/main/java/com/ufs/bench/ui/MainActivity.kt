@@ -312,7 +312,7 @@ fun MainAppScreen(viewModel: BenchmarkViewModel) {
                     },
                     dismissButton = {
                         TextButton(onClick = { viewModel.cancelPendingStart() }) {
-                            Text("改用 test 档")
+                            Text("改用 低性能 档")
                         }
                     }
                 )

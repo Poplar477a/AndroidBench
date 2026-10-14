@@ -858,7 +858,9 @@ class BenchmarkViewModel(application: Application) : AndroidViewModel(applicatio
             val totalMb = readTotalMemoryBytes() / (1024 * 1024)
             val availMb = readAvailableMemoryBytes() / (1024 * 1024)
             val needMb = com.ufs.bench.model.SpecMemoryEstimator.estimateMb(spec)
-            val fits = needMb > 0 && availMb > needMb
+            // needMb == 0：该档工作集由内核按可用内存一半自适应（拓展档的 PC 级规模），
+            // 因此**不会**因内存不足中断 —— 不能再用 availMb > needMb 判成不足（那会误报警告）
+            val fits = needMb <= 0 || availMb > needMb
             // 时长预估：作为主要告知项（内存充足时唯一的提示）
             val estMinutes = com.ufs.bench.model.SpecMemoryEstimator
                 .estimateMinutes(spec, readAvailableMemoryBytes())
@@ -873,9 +875,11 @@ class BenchmarkViewModel(application: Application) : AndroidViewModel(applicatio
                     append("本机物理内存：约 ${totalMb} MB，当前可用：约 ${availMb} MB\n\n")
                     append("⚠️ 可用内存不足以容纳预估工作集，本档大概率无法完成")
                     append("（可能 OOM 或被系统强杀）。\n\n")
-                    append("你可以：\n· 选「强制运行」跳过预检直接尝试（风险自负）\n· 或点「改用 test 档」")
+                    append("你可以：\n· 选「强制运行」跳过预检直接尝试（风险自负）\n· 或点「改用 低性能 档」")
                 } else {
-                    append("内存判定：可用内存足以容纳预估工作集，不会因内存不足中断。\n\n")
+                    append(if (needMb <= 0)
+                        "内存判定：本档工作集按可用内存一半自适应（PC 级规模受限后取上限），不会因内存不足中断。\n\n"
+                    else "内存判定：可用内存足以容纳预估工作集，不会因内存不足中断。\n\n")
                     append("建议：测试期间保持应用在前台、连接充电器、关闭其他占用存储与 CPU 的应用。\n\n")
                     append("确认开始？")
                 }

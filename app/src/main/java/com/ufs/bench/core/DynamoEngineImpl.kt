@@ -159,6 +159,7 @@ class DynamoEngineImpl : IBenchmarkEngine {
             verifyDetail = nativeRes.verifyDetail ?: "",
             specRatio = nativeRes.specRatio,
             referenceSeconds = nativeRes.referenceSeconds,
+            measuredSeconds = nativeRes.measuredSeconds,
             workUnits = nativeRes.workUnits,
             ioMethod = nativeRes.ioMethod ?: "",
             privilegeMethod = nativeRes.privilegeMethod ?: "",

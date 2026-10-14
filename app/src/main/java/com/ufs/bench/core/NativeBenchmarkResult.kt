@@ -26,6 +26,8 @@ class NativeBenchmarkResult(
     val workUnits: Long,
     val opsPerSec: Double,
     val referenceSeconds: Double,
+    /** **本机实测耗时**（秒）。此前缺该字段，实测时间在结果里恒为 0。 */
+    val measuredSeconds: Double,
     val ioMethod: String?,
     val privilegeMethod: String?,
     val totalBytesDone: Long,

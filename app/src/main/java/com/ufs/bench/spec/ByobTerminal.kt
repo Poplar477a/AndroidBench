@@ -17,6 +17,7 @@ import java.io.File
  *    verify <id>       ELF 准入核验 + 二进制 SHA-256 + 依赖白名单
  *    run <id>          沙箱执行（断网/降权/能力清零/seccomp/rlimit/墙钟）+ Oracle 判分
  *    cat <id>          显示上次执行结果文件
+   spec              显示组件包打包规范（自定义 ELF / 自备基准怎么打包）
  *    import            打开系统文件选择器，导入 .zip 组件包（校验后落入私有目录）
  *    log on|off        开关应用日志流（默认开：平时就把日志打在终端里）
  *    clear             清屏
@@ -97,8 +98,21 @@ object ByobTerminal {
             }
         }
         if (zip == null || !zip.isFile) { append("[import] 读取失败"); return }
-        append("[import] 包大小：" + zip.length() + " 字节")
-        val res = withContext(Dispatchers.IO) { BundleManager.importBundle(ctx, zip, expectedSha256) }
+        append("[import] 文件大小：" + zip.length() + " 字节")
+        // 按魔数分流：zip（PK）走组件包导入；ELF（0x7F 'E' 'L' 'F'）走裸 ELF 导入
+        val magic = withContext(Dispatchers.IO) {
+            try { val h = ByteArray(4); zip.inputStream().use { it.read(h) }; h } catch (t: Throwable) { null }
+        }
+        val isZip = magic != null && magic[0] == 0x50.toByte() && magic[1] == 0x4B.toByte()
+        val isElf = magic != null && magic[0] == 0x7F.toByte() && magic[1] == 0x45.toByte()
+        if (isElf) {
+            append("[import] 识别为裸 ELF：按最小组件包处理（无参数、不判分）")
+            append("[import] 需要传参或与官方参考输出比对时，请改用 .zip 组件包，规范见命令 spec")
+        }
+        val res = withContext(Dispatchers.IO) {
+            if (isElf) BundleManager.importElf(ctx, zip, expectedSha256)
+            else BundleManager.importBundle(ctx, zip, expectedSha256)
+        }
         append("[import] ok=" + res.ok + " 文件=" + res.files + " 字节=" + res.totalBytes)
         append("[import] 二进制 sha256=" + res.binarySha256)
         if (res.needed.isNotEmpty()) append("[import] 依赖=" + res.needed.joinToString(", "))
@@ -124,7 +138,8 @@ object ByobTerminal {
                 val v = parts.getOrNull(1)?.lowercase()
                 setLog(v != "off")
             }
-            "import" -> append("请在界面上方的导入按钮选择 .zip 组件包（或先运行 import 触发文件选择器）")
+            "spec" -> appendBlock(PACK_SPEC)
+            "import" -> append("请在界面上方的导入按钮选择 .zip 组件包或裸 ELF（或先运行 import 触发文件选择器）")
             "clear" -> clear()
             else -> append("未知命令：" + parts[0] + "（输入 help）")
         }
@@ -215,6 +230,55 @@ object ByobTerminal {
         if (!f.isFile) { append("无结果文件：" + f.absolutePath); return }
         appendBlock(f.readText())
     }
+
+    /** 打包规范（终端 spec 命令打印；与 docs/byob-打包规范.md 同步维护） */
+    private const val PACK_SPEC = """组件包打包规范（BYOB）
+========================================
+【方式一】最简：直接导入一个裸 ELF
+  · 要求：aarch64（e_machine=0xB7）可执行文件；依赖只能是 bionic 白名单
+    （libc.so / libm.so / libdl.so / liblog.so / libz.so / libstdc++.so /
+      libc++_shared.so / libandroid.so / libatomic.so）；
+    glibc 名字（libc.so.6、ld-linux-aarch64.so.1 等）会被直接拒绝。
+  · 行为：应用自动生成最小组件包（无参数、不做参考输出判分），id 取文件名。
+  · 适用：自己写的小程序、单文件微基准。
+
+【方式二】完整：.zip 组件包（支持传参 + 与官方参考输出比对判分）
+  目录结构（zip 内即根目录，不要再套一层）：
+    runner.json             必需，见下
+    bin/<可执行文件>         必需，arm64 ELF
+    data/input/...          可选，输入数据集
+    data/output/<参考输出>   可选，判分用的参考输出
+
+  runner.json 字段：
+    benchmark_id            字符串，唯一用例 id
+    binary_path             相对路径，如 bin/lbm
+    command_args            字符串数组；以 data/ 开头的元素会被映射为包内绝对路径
+    stdout_file             标准输出落盘的文件名（**不要**用程序自己会写的名字）
+    oracle_rule {
+      type                  none 表示不判分；其它值按下面两个容差判分
+      reference_file        相对路径，如 data/output/lbm.out
+      abs_tolerance         绝对容差，如 1e-7
+      rel_tolerance         相对容差，如 1e-4
+      ignore_line_patterns  命中任一子串的行两侧都不参与比对
+                            （时间/内存分配这类每次运行都不同的行必须排除）
+    }
+    execution_profile {
+      affinity_policy          预留，当前用 none
+      cooldown_target_celsius  冷却目标温度，0 = 不等冷却
+      max_execution_seconds    墙钟上限
+    }
+
+【判分口径】逐行比对：行内按空白切 token；两侧都能解析为数字时用
+  |a-b| <= abs_tol + rel_tol*|b|，否则按字符串精确比对；空行两侧都忽略。
+  这是"与参考输出一致"的一致性判定，不代表任何官方成绩。
+
+【打包示例】519.lbm_r.zip 内：
+    runner.json  benchmark_id=519.lbm_r / binary_path=bin/lbm
+                 command_args=[20, reference.dat, 0, 1, 100_100_130_cf_a.of]
+                 stdout_file=lbm.out
+                 oracle_rule={type=numeric_tolerance, reference_file=data/output/lbm.out,
+                              abs_tolerance=1e-7, rel_tolerance=1e-4}
+  输入文件 100_100_130_cf_a.of 放包根（程序按裸文件名打开，需位于运行目录）"""
 
     private const val HELP = """命令：
   help              显示本帮助

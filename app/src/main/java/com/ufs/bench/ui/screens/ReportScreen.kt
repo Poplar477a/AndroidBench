@@ -309,7 +309,9 @@ private fun SpecHistoryCard(
                                 color = MaterialTheme.colorScheme.onTertiaryContainer
                             )
                             Text(
-                                text = "自标定基线 ${String.format("%.1f", item.referenceSeconds)}s · 工作量 ${item.workUnits}",
+                                text = "自标定基线 ${String.format("%.1f", item.referenceSeconds)}s" +
+                            (if (item.measuredSeconds > 0.0) " · 实测 ${String.format("%.2f", item.measuredSeconds)}s" else "") +
+                            " · 工作量 ${item.workUnits}",
                                 fontSize = 10.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

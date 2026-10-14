@@ -134,6 +134,9 @@ struct BenchmarkResult {
     std::string verify_detail;               // 校验细节（结果披露）
     double spec_ratio;                       // 单任务口径 口径比值：参考时间 / 实测时间
     double reference_seconds;                // 参考机基准时间
+    double measured_seconds = 0.0;           // **本机实测耗时**（秒）：内置基准取内核计时，
+                                             // 存储路径取整轮实测。此前没有该字段，界面只能显示
+                                             // "自标定基线耗时"，实测时间在结果里恒为 0（2026-10-14 修）
     uint64_t work_units;                     // 算法工作量计数
     double ops_per_sec;                      // 算力 (M-Ops/s)
     // ---- 存储测试的手段披露 ----

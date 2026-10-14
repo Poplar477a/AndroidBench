@@ -378,13 +378,13 @@ Java_com_ufs_bench_core_DynamoNativeBridge_nativeRunBenchmark(
     }
 
     // 构造 Java 返回对象
-    // 签名: (ZLjava/lang/String;DDJJDDDDJDDZLjava/lang/String;DJDDLjava/lang/String;Ljava/lang/String;JZLcom/ufs/bench/core/NativeDetailedStats;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+    // 签名: (ZLjava/lang/String;DDJJDDDDJDDZLjava/lang/String;DJDDDLjava/lang/String;Ljava/lang/String;JZLcom/ufs/bench/core/NativeDetailedStats;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
     //                                                                                                   ^^^^^^^^^^^^^^^^^^^^^^ 末尾依次是 compilerToolchain / engineProfile / engineMcpu
     jclass res_class = env->FindClass("com/ufs/bench/core/NativeBenchmarkResult");
     jmethodID res_init = env->GetMethodID(
         res_class,
         "<init>",
-        "(ZLjava/lang/String;DDJJDDDDJDDZLjava/lang/String;DJDDLjava/lang/String;Ljava/lang/String;JZLcom/ufs/bench/core/NativeDetailedStats;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"
+        "(ZLjava/lang/String;DDJJDDDDJDDZLjava/lang/String;DJDDDLjava/lang/String;Ljava/lang/String;JZLcom/ufs/bench/core/NativeDetailedStats;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V"
     );
 
     jstring j_err = env->NewStringUTF(res.error_message.c_str());
@@ -428,6 +428,7 @@ Java_com_ufs_bench_core_DynamoNativeBridge_nativeRunBenchmark(
         static_cast<jlong>(res.work_units),
         res.ops_per_sec,
         res.reference_seconds,
+        res.measured_seconds,
         j_io,
         j_priv,
         static_cast<jlong>(res.total_bytes_done),

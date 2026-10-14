@@ -278,6 +278,8 @@ fun RunningScreen(
                 finalRec.memMetric else metric.memMetric
             SpecPortedMetricsCard(
                 spec, shownRatio, shownCpu, shownMem,
+                measuredSeconds = finalRec?.measuredSeconds ?: 0.0,
+                referenceSeconds = finalRec?.referenceSeconds ?: 0.0,
                 isEmulator = state.hardwareInfo.isEmulator
             )
             // 编译工具链独立成块（默认收起、可展开完整串）：原生按编译期宏生成，这里只展示
@@ -450,6 +452,10 @@ private fun SpecPortedMetricsCard(
     specRatio: Double,
     cpuMetric: Double,
     memMetric: Double,
+    /** 本机实测耗时（秒）；0 = 该路径不产出，不编造 */
+    measuredSeconds: Double = 0.0,
+    /** 自标定基线耗时（秒） */
+    referenceSeconds: Double = 0.0,
     /** 模拟器/虚拟机：跨设备比值不可比，不展示 */
     isEmulator: Boolean = false
 ) {
@@ -506,6 +512,18 @@ private fun SpecPortedMetricsCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                // 实测耗时 vs 自标定基线：比值 = 基线 / 实测，缺了实测这一半结果无法自证
+                if (measuredSeconds > 0.0) {
+                    Text(
+                        text = "实测 " + String.format("%.3f", measuredSeconds) + " s" +
+                            (if (referenceSeconds > 0.0)
+                                "  ·  自标定基线 " + String.format("%.1f", referenceSeconds) + " s"
+                             else ""),
+                        fontSize = 11.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
                 metrics.cpuLabel?.let { lbl ->
                     Column {
                         Text(lbl, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)

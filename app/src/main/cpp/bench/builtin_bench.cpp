@@ -23,6 +23,7 @@
 #include <cstring>
 #include <string>
 #include <thread>
+#include <functional>
 
 namespace dynamo {
 namespace builtin {
@@ -71,7 +72,19 @@ struct TierPlan {
     const char *detail;
 };
 
-TierPlan planFor(const char *key, uint32_t tier, uint32_t cfg_threads)
+// 等效迭代数：按本机基线速率把"想跑多久"换算成迭代数（强度挡位需要可加压，见 planFor）
+constexpr uint64_t kIter20s = static_cast<uint64_t>(120000.0 * 20.0);   // 常规：单线程约 20 s
+constexpr uint64_t kIter30s = static_cast<uint64_t>(120000.0 * 30.0);   // 拓展：每核约 30 s
+
+// 拓展档的"PC 级规模"必须受**本机可用内存**封顶，否则必然 OOM。返回实际采用的工作集字节数。
+uint64_t capToMemory(uint64_t want, uint64_t avail)
+{
+    if (avail == 0) return want;                 // 未探测到可用内存时不擅自缩小
+    const uint64_t cap = (avail / 2) & ~static_cast<uint64_t>(0xFFFFF);  // 取可用内存一半，向下对齐 1 MiB
+    return (want > cap) ? cap : want;
+}
+
+TierPlan planFor(const char *key, uint32_t tier, uint32_t cfg_threads, uint64_t avail)
 {
     const uint32_t t = (tier < 1) ? 1 : (tier > 3 ? 3 : tier);
     const uint32_t cores = (cfg_threads > 0) ? cfg_threads : 1;
@@ -80,23 +93,30 @@ TierPlan planFor(const char *key, uint32_t tier, uint32_t cfg_threads)
         // CoreMark 官方 run rules：单次计分运行必须 ≥ 10 s。
         // 低性能档故意只跑 2000 次迭代（约 0.02 s），只能当功能自检 —— 结果会被标注
         // "不构成标准成绩"；常规档交给上游自动标定到 ≥10 s；拓展档再叠全核并列。
+        // 迭代数按本机基线速率换算成"等效运行时长"，让强度可控且可复现：
+        //   低性能 2000 次（秒级自检）；常规单线程 20 s 等效；拓展全核、每核 30 s 等效。
+        // 用固定迭代数而不是上游自动标定：自动标定的 10 s 目标写死在上游文件里（不可改，
+        // 改了就不是逐字节上游），而强度挡位需要能明确加压。
         if (t == 1) return { 1,    2000, 0, "低性能", "2000 次迭代（快速自检，不构成标准成绩）" };
-        if (t == 2) return { 1,    0,    0, "常规",   "官方自动标定 ≥10 s（单线程标准口径）" };
-        return        { cores, 0,    0, "拓展",   "官方自动标定 ≥10 s × 全核并列（总分口径）" };
+        if (t == 2) return { 1,    kIter20s, 0, "常规", "单线程 · 约 20 s 等效迭代（按本机基线速率换算）" };
+        return        { cores, kIter30s, 0, "拓展", "全核 · 每核约 30 s 等效迭代（PC 级总分口径）" };
     }
     if (std::strcmp(key, "stream") == 0) {
         // STREAM 的强度就是工作集：必须击穿 LLC 才叫持续带宽（规范红线 <64MB 只能算缓存驻留）。
         const uint64_t mib = 1024ull * 1024ull;
+        // PC 级参考规模：STREAM 官方例题用 2×10^8 个双精度元素、4 个数组 ≈ 6.4 GB。
+        // 手机装不下，所以拓展档按"想要的 PC 规模"给，再用可用内存一半封顶（实测值会写进结果）。
+        const uint64_t pcScale = 200000000ull * 8ull * 4ull;
         if (t == 1) return { 1, 10,  64 * mib,  "低性能", "工作集 64 MiB · NTIMES=10（贴近缓存边界）" };
-        if (t == 2) return { 1, 10, 320 * mib,  "常规",   "工作集 320 MiB · NTIMES=10（上游标准规模）" };
-        return        { 1, 20, 640 * mib,       "拓展",   "工作集 640 MiB · NTIMES=20（深度压带宽）" };
+        if (t == 2) return { 1, 20, 768 * mib,  "常规",   "工作集 768 MiB · NTIMES=20（加压，稳定击穿 LLC）" };
+        return        { 1, 20, capToMemory(pcScale, avail), "拓展", "PC 级规模（6.4 GB）受限后取可用内存一半 · NTIMES=20" };
     }
     if (std::strcmp(key, "tinymembench") == 0) {
         // 延迟阶梯要覆盖 L1 → DRAM：工作集越大档位越多，拓展档还给更长扫描。
         const uint64_t mib = 1024ull * 1024ull;
         if (t == 1) return { 1, 1, 32 * mib,  "低性能", "扫描到 32 MiB（覆盖 L1/L2，DRAM 仅浅测）" };
-        if (t == 2) return { 1, 3, 64 * mib,  "常规",   "扫描到 64 MiB（覆盖到 DRAM，重复 3 次）" };
-        return        { 1, 5, 256 * mib,      "拓展",   "扫描到 256 MiB（深度扫描，重复 5 次）" };
+        if (t == 2) return { 1, 5, 128 * mib, "常规",   "扫描到 128 MiB · 重复 5 次（加压）" };
+        return        { 1, 5, capToMemory(1024 * mib, avail), "拓展", "扫描到 1 GiB（受限时取可用内存一半）· 重复 5 次" };
     }
     return { 1, 0, 0, "常规", "" };
 }
@@ -111,15 +131,24 @@ constexpr double kRefCoreMarkIterPerSec = 120000.0;   // 实测 122,156 iteratio
 constexpr double kRefStreamTriadMbps    = 34000.0;    // 实测 34,052 MB/s（Triad，64 MiB 档）
 constexpr double kRefTinyReadMbps       = 31900.0;    // 实测 31,911 MB/s（顺序读最大档）
 
+
 /** 取消标志桥：内核轮询的是 const volatile int*，而 App 侧给的是 std::atomic<bool>* */
 class CancelFlag {
 public:
-    explicit CancelFlag(std::atomic<bool> *stop) : stop_(stop)
+    /**
+     * @param tick 每 ~250 ms 调一次（用于上报运行中进度）。
+     *   为什么需要：CoreMark 这类内核自身没有任何进度钩子，若只在结束时给结果，
+     *   界面上的"已运行 Ns"会一直卡在 0（2026-10-14 真机发现的 bug）。
+     */
+    explicit CancelFlag(std::atomic<bool> *stop, std::function<void()> tick = nullptr)
+        : stop_(stop), tick_(std::move(tick))
     {
-        if (stop_ != nullptr) {
+        if (stop_ != nullptr || tick_) {
             watcher_ = std::thread([this] {
+                int n = 0;
                 while (!finished_.load()) {
-                    if (stop_->load()) flag_ = 1;
+                    if (stop_ != nullptr && stop_->load()) flag_ = 1;
+                    if (tick_ && (++n % 50) == 0) tick_();   // 5 ms × 50 ≈ 250 ms
                     std::this_thread::sleep_for(std::chrono::milliseconds(5));
                 }
             });
@@ -134,6 +163,7 @@ public:
 
 private:
     std::atomic<bool> *stop_ = nullptr;
+    std::function<void()> tick_;
     std::atomic<bool>  finished_{false};
     std::thread        watcher_;
     volatile int       flag_ = 0;
@@ -196,9 +226,8 @@ RunResult RunBenchKernel(uint32_t bench_id, const RunConfig &cfg, const LiveCall
         return out;
     }
 
-    const TierPlan plan = planFor(meta->key, cfg.scale, cfg.threads);
+    const TierPlan plan = planFor(meta->key, cfg.scale, cfg.threads, cfg.avail_mem_bytes);
 
-    CancelFlag cancel(cfg.stop);
     LiveCtx lc{ &live, bench_now_ms(), 0 };
 
     bench_params p;
@@ -208,9 +237,17 @@ RunResult RunBenchKernel(uint32_t bench_id, const RunConfig &cfg, const LiveCall
     p.scale_level    = (cfg.scale >= 1 && cfg.scale <= 3) ? (cfg.scale - 1) : 1;  // bench_api: 0=Smoke 1=Small 2=Standard
     p.data_bytes     = plan.data_bytes;
     p.max_runtime_ms = 0;
-    p.cancel_flag    = cancel.ptr();
     p.progress_cb    = on_progress;
     p.progress_ctx   = &lc;
+
+    // 取消观察 + **进度心跳**：每 ~250 ms 主动上报一次 elapsed。
+    // 必要性：CoreMark 这类内核自身没有进度钩子，只在结束时给结果的话，
+    // 界面"已运行 Ns"会一直停在 0（2026-10-14 真机发现的 bug）。
+    // fraction 传 -1 表示"进度未知"，不编造百分比；只如实上报已用时间与当前读数。
+    CancelFlag cancel(cfg.stop, [&p] {
+        if (p.progress_cb != nullptr) p.progress_cb(p.progress_ctx, -1.0, "运行中");
+    });
+    p.cancel_flag = cancel.ptr();
 
     // 内存预算：交给 App 侧探测到的可用内存（留 25% 余量给系统，避免被 LMK 强杀）
     if (cfg.avail_mem_bytes > 0) {

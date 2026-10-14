@@ -148,6 +148,74 @@ object BundleManager {
             "通过：已就位 " + dst.absolutePath + "，二进制 " + elf.message)
     }
 
+    /**
+     * 裸 ELF 导入：把用户自备的 arm64 可执行文件直接打成**最小组件包**。
+     *
+     * 适用：不想写 runner.json 的场景（无命令行参数、不做参考输出判分），
+     *       例如用户自己写的微基准 / 从别处拿到的单文件可执行程序。
+     * 不适用：需要传参、需要与官方参考输出比对判分的场景 —— 那要用 .zip 组件包，
+     *       规范见终端 'spec' 命令与 docs/byob-打包规范.md。
+     */
+    fun importElf(ctx: Context, elf: File, expectedSha256: String?): ImportResult {
+        if (expectedSha256 != null && !sha256(elf).equals(expectedSha256, ignoreCase = true)) {
+            return ImportResult(false, null, 1, elf.length(), "", emptyList(), listOf("sha256-mismatch"),
+                "拒绝：SHA-256 与预期不符")
+        }
+        if (elf.length() <= 0) {
+            return ImportResult(false, null, 1, 0, "", emptyList(), listOf("empty"), "拒绝：文件为空")
+        }
+        // benchmark_id 由文件名推导并做白名单化（目录名/命令行都会用到，不能带路径分隔符）
+        val id = elf.name.substringBeforeLast('.').ifBlank { "custom_elf" }
+            .replace(Regex("[^A-Za-z0-9_.-]"), "_")
+        val staging = File(ctx.cacheDir, "byob-elf-staging").apply { deleteRecursively(); mkdirs() }
+        val binDir = File(staging, "bin").apply { mkdirs() }
+        val placed = File(binDir, id)
+        elf.copyTo(placed, overwrite = true)
+        placed.setExecutable(true, false)
+        val elfCheck = ElfValidator.validate(placed)
+        if (!elfCheck.ok) {
+            staging.deleteRecursively()
+            return ImportResult(false, null, 1, placed.length(), "", elfCheck.needed, elfCheck.rejected,
+                "拒绝：ELF 准入核验未通过（" + elfCheck.message + "）")
+        }
+        val cfg = JobConfig(
+            benchmarkId = id,
+            binaryPath = "bin/" + id,
+            args = emptyList(),
+            stdoutFile = id + ".out",
+            oracleType = "none",
+            oracleReference = null,
+            absTolerance = 1e-7,
+            relTolerance = 1e-4,
+            ignoreLinePatterns = emptyList(),
+            affinityPolicy = "none",
+            cooldownCelsius = 0.0,
+            maxSeconds = 600
+        )
+        // 用 JSONObject 组装（手写字符串极易因转义/换行写坏 —— 2026-10-14 就踩过）
+        val json = org.json.JSONObject().apply {
+            put("benchmark_id", cfg.benchmarkId)
+            put("binary_path", cfg.binaryPath)
+            put("command_args", org.json.JSONArray())
+            put("stdout_file", cfg.stdoutFile)
+            put("oracle_rule", org.json.JSONObject().put("type", "none"))
+            put("execution_profile", org.json.JSONObject()
+                .put("affinity_policy", "none")
+                .put("cooldown_target_celsius", 0.0)
+                .put("max_execution_seconds", cfg.maxSeconds))
+        }.toString(2)
+        File(staging, "runner.json").writeText(json + '\n')
+        val dst = File(bundlesDir(ctx), cfg.benchmarkId)
+        dst.deleteRecursively()
+        staging.copyRecursively(dst, overwrite = true)
+        staging.deleteRecursively()
+        val finalBin = File(dst, cfg.binaryPath)
+        finalBin.setExecutable(true, true)
+        val files = dst.walkTopDown().count { it.isFile }
+        return ImportResult(true, cfg, files, finalBin.length(), sha256(finalBin), elfCheck.needed, emptyList(),
+            "通过：已按裸 ELF 打成最小组件包（无参数、不判分）→ " + dst.absolutePath)
+    }
+
     internal fun parseRunnerJson(text: String): JobConfig? {
         return try {
             val o = org.json.JSONObject(text)

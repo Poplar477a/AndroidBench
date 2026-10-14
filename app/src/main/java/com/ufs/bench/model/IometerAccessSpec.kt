@@ -101,17 +101,20 @@ object SpecMemoryEstimator {
         return when (spec.builtinKernelId) {
             // CoreMark：上游按 MULTITHREAD 个上下文各分配 2000 字节数据区，量级可忽略
             1001 -> 2L
-            // STREAM：工作集 = 4×N×8 字节，N 由挡位给定（低性能 64 MiB / 常规 320 MiB / 拓展 640 MiB）
+            // STREAM：工作集 = 4×N×8 字节
+            //   低性能 64 MiB / 常规 768 MiB（加压）/
+            //   拓展 = PC 级 6.4 GB 但**按可用内存一半自适应** -> 返回 0 表示"无需内存预检"
             1002 -> when (tier) {
                 SpecTier.TEST -> 80L
-                SpecTier.TRAIN -> 340L
-                SpecTier.REFSPEED -> 680L
+                SpecTier.TRAIN -> 800L
+                SpecTier.REFSPEED -> 0L
             }
-            // tinymembench：两份缓冲区（低性能 32 MiB / 常规 64 MiB / 拓展 256 MiB）+ 探针
+            // tinymembench：两份缓冲区 + 探针
+            //   低性能 32 MiB / 常规 128 MiB（加压）/ 拓展 1 GiB（同样自适应封顶）
             1003 -> when (tier) {
                 SpecTier.TEST -> 80L
-                SpecTier.TRAIN -> 145L
-                SpecTier.REFSPEED -> 530L
+                SpecTier.TRAIN -> 275L
+                SpecTier.REFSPEED -> 0L
             }
             else -> 0L
         }
@@ -125,15 +128,18 @@ object SpecMemoryEstimator {
         val tier = spec.tier
         val baseMin = when (spec.builtinKernelId) {
             // CoreMark：常规/拓展由上游自动标定到 ≥10 s；低性能只有 2000 次迭代（秒级）
-            1001 -> 1
-            // STREAM：四内核 × NTIMES。实测（Redmi SM7475，-O3）64 MiB 档约 0.1 s、320 MiB 档约 0.5 s，
-            // 这里按最慢情况给整分钟提示
-            1002 -> when (tier) {
+            // CoreMark：常规 = 20 s 等效迭代（单线程）；拓展 = 全核 × 每核 30 s 等效
+            1001 -> when (tier) {
                 SpecTier.TEST -> 1; SpecTier.TRAIN -> 1; SpecTier.REFSPEED -> 2
             }
-            // tinymembench：多档扫描 × 重复次数，实测常规档约 4 s、拓展档约数十秒
+            // STREAM：四内核 × NTIMES。常规 768 MiB（实测同量级 320 MiB 约 0.5 s，768 MiB 约 1-2 s）；
+            // 拓展工作集按可用内存自适应，手机上一轮约数十秒
+            1002 -> when (tier) {
+                SpecTier.TEST -> 1; SpecTier.TRAIN -> 1; SpecTier.REFSPEED -> 3
+            }
+            // tinymembench：128 MiB × 5 约十余秒；1 GiB 档约数分钟
             1003 -> when (tier) {
-                SpecTier.TEST -> 1; SpecTier.TRAIN -> 2; SpecTier.REFSPEED -> 5
+                SpecTier.TEST -> 1; SpecTier.TRAIN -> 1; SpecTier.REFSPEED -> 5
             }
             else -> 1
         }
@@ -343,6 +349,8 @@ data class BenchmarkSummary(
     val specRatio: Double = 0.0,
     /** 本项目自标定基线耗时（秒）—— 不是 任何官方参考时间，展示时勿称"参考机" */
     val referenceSeconds: Double = 0.0,
+    /** **本机实测耗时**（秒）—— 与自标定基线同一口径（同内核同参数） */
+    val measuredSeconds: Double = 0.0,
     val workUnits: Long = 0,
     // ---- 存储测试的手段披露 ----
     val ioMethod: String = "",          // 实际生效的 I/O 通道（O_DIRECT / O_SYNC / 缓冲），须与 cacheMode 一致

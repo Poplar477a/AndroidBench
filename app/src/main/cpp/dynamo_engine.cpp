@@ -497,6 +497,7 @@ BenchmarkResult DynamoEngine::RunBenchmark(
         res.verify_detail = sr.verify_detail;
         res.spec_ratio = sr.ratio;
         res.reference_seconds = sr.reference_seconds;
+        res.measured_seconds = sr.seconds;      // 本机实测耗时（内核计时）
         res.work_units = sr.work_units;
         res.ops_per_sec = sr.ops_per_sec;
         res.final_cpu_metric = sr.ops_per_sec;
@@ -1008,6 +1009,7 @@ BenchmarkResult DynamoEngine::RunBenchmark(
     }
     double final_cpu_ops_sec = total_cpu_ops / total_elapsed;
     double final_mem_gbps = (total_mem_bytes / (1024.0 * 1024.0 * 1024.0)) / total_elapsed;
+    res.measured_seconds = total_elapsed;   // 存储路径：整轮实测耗时
     res.final_cpu_metric = final_cpu_ops_sec / 1e6; // M-Ops/s
     res.final_mem_metric = final_mem_gbps;
 

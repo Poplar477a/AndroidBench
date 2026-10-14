@@ -1148,8 +1148,12 @@ BenchmarkViewModel「内置微基准工作负载 / 内置微基准执行中」�
 ### E. 审阅发现的阻塞（未解决，如实记录）
 1. **arm64 真机离线**：红米 33ed7dff 已从 adb 掉线；模拟器为 x86_64（带 houdini），
    执行 arm64 静态二进制**直接段错误** → 无法用模拟器替代 arm64 真机验证 run；
-2. **ELF 准入白名单是 glibc 风格**（libc.so.6 / ld-linux-aarch64.so.1…），NDK **动态**二进制依赖
-   libc.so/libm.so/libdl.so 会被拒 → 必须静态链接（实测静态包「依赖 0 项」通过；代价：9 MB vs 20 KB）；
+2. ~~ELF 准入白名单是 glibc 风格，NDK 动态二进制会被拒，必须静态链接~~
+   **【2026-10-14 更正，Lead 自查发现的误判】**：ElfValidator 的白名单**本来就是 bionic 风格**
+   （ALLOWED_SONAMES = libc.so / libm.so / libdl.so / liblog.so / libstdc++.so / libc++_shared.so / libandroid.so / libatomic.so），
+   glibc 名字（libc.so.6 / ld-linux-aarch64.so.1）出现在 **DENIED_SONAMES** 里——上一轮我把拒绝名单误读成白名单。
+   结论更正：**NDK 动态二进制本来就通过准入**，无需静态链接（组件包可保持 20 KB 量级，而不是 9 MB）；
+   静态包的实测结论（依赖 0 项、准入通过）依然成立，只是"必须静态"的说法不成立。
 3. **终端命令注入未打通**（我的 uiautomator 自动化没找准输入框）→ list/verify/run 的命令级验证待补。
 
 ### F. 其它审阅发现（卫生项）
@@ -1158,4 +1162,38 @@ BenchmarkViewModel「内置微基准工作负载 / 内置微基准执行中」�
 - app 与 AndroidBenech 的 bench 内核**内容逐字节一致**（diff 校验通过），属"同一内核两处消费"，需在文档中显式声明，
   否则将来两边各改一份就会漂移；
 - 本工作区无 git 提交基线（status 全是未跟踪），"还原"只能依赖文件级备份，建议尽快建立基线。
+
+
+### G. 终端命令链实测（模拟器 127.0.0.1:16384，2026-10-14 08:2x）
+导入后的三条命令全部走通（终端原始输出）：
+
+    > list
+    benchmark_id            bytes  runner   binary
+    519.lbm_r             9029712  有        lbm_r
+
+    > verify 519.lbm_r
+    binary      : /data/user/0/com.ufs.bench.lab/files/byob/519.lbm_r/bin/lbm_r
+    sha256      : 117fe3c59db233207b9b85e2c6567d279da9d287e9029fb6fd9064d643484329
+    bytes       : 9029712
+    elf.ok      : true
+    e_machine   : 0xb7
+    is64        : true
+    message     : 通过：arm64 ELF，依赖 0 项全部在白名单内
+
+    > run 519.lbm_r
+    开始执行（沙箱）…
+    exit/signal : -1 / 0
+    wall_seconds: 0.000
+    max_rss_kb  : 0
+    oracle      : 未通过/未配置  被测输出文件缺失：lbm.out
+
+解读：**执行链与判分链都是诚实失败的** —— 模拟器是 x86_64（宿主无 arm64 执行能力），
+二进制根本没跑起来（0.000 s、exit -1），oracle 于是如实报「输出文件缺失」，
+**没有产生任何虚假成绩**（正是需求方要的行为）。arm64 真机上的成功路径仍需红米解锁后验证。
+
+### H. git 基线（本轮建立）
+- 提交 c3c4c69：175 文件 / 34,992 行新增；工作区已 clean；
+- .gitignore 补充：AndroidBenech/upstream/（1.2 GB 素材，按 SOURCES_MANIFEST.md 可重新拉取）、
+  a.out / *.7z / *.fio / ref_zip/ / .buildlogs/；
+- 复核：SPEC2017/（4.1 GB 许可内容）与 .tools/（13 GB SDK）均未入库。
 

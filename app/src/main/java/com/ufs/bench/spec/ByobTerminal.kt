@@ -229,6 +229,9 @@ object ByobTerminal {
         append("  · 查看完整输出          输入 cat " + id)
         append("  · 公共目录导出          " +
             (exported ?: "失败（公共目录不可写；私有副本仍可用 cat " + id + " 查看）"))
+        // 判分含义是固定陈述，不随结果变化：避免把"输出一致"读成"官方成绩"
+        append("  · 判分含义              仅表示「输出与参考输出逐行一致 / 不一致」；" +
+            "不代表任何官方成绩，SPEC 类结果不得与 spec.org 公布数值比较")
         if (!s.oracleVerified) {
             append("  · 判分说明              " + outcome.oracleDetail.replace('\n', ' ').take(200))
         }
@@ -282,6 +285,16 @@ object ByobTerminal {
 【判分口径】逐行比对：行内按空白切 token；两侧都能解析为数字时用
   |a-b| <= abs_tol + rel_tol*|b|，否则按字符串精确比对；空行两侧都忽略。
   这是"与参考输出一致"的一致性判定，不代表任何官方成绩。
+
+【SPEC 相关：严谨声明】
+  · 本终端与"常规用 adb 把 SPEC 官方二进制推进手机跑"**不是一回事**：官方口径要求 SPEC 官方
+    工具链、官方 flags（base/peak 分档）、官方输入集与官方 run rules；本通路是"用户自备源码 +
+    本地编译 + 与参考输出做一致性比对"，两者不可互换、不可类比，成绩也不得与官方比较。
+  · 判分只有两种含义：输出与参考一致 / 不一致。本通路**不产出任何 SPEC 指标**，不得称为
+    SPEC 成绩、SPECratio、SPECspeed、SPECrate，也不得与 spec.org 公布的任何数值比较或排名。
+  · 编译加 -DSPEC 只是为了**输出保真**（让程序输出与官方参考一致，否则无从比对），
+    不代表获得官方编译口径或官方成绩。
+  · 本项目不分发 SPEC 的任何源码 / 输入集 / 参考输出 / 官方工具链；组件包须由用户用自备介质生成。
 
 【打包示例】519.lbm_r.zip 内：
     runner.json  benchmark_id=519.lbm_r / binary_path=bin/lbm

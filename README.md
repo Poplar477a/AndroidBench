@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/badge/release-0.1.0--Alpha-orange.svg)](../../releases)
 [![Platform](https://img.shields.io/badge/platform-Android%208.0%2B%20(API%2026)-green.svg)](#)
-[![Network](https://img.shields.io/badge/network-none-brightgreen.svg)](#八-许可商标与合规)
+[![Network](https://img.shields.io/badge/network-none-brightgreen.svg)](#九-许可商标与合规)
 
 > **Android 移动端存储性能基准工具**：参考 FIO 与 Iometer 的测试模型**独立实现**，
 > 内置上游源码裁剪的算力/内存层次基准（CoreMark / STREAM / tinymembench），
@@ -247,7 +247,44 @@ zip 内**即根目录，不要再套一层**：
 
 ---
 
-## 八、 许可、商标与合规
+## 八、 SPEC 相关能力的严谨声明
+
+本项目与 SPEC® 的关系只有一条：**提供通路**，既不提供任何 SPEC 内容，也不产出 SPEC 成绩。
+
+### 1. 与"常规用 adb 把 SPEC 推进手机跑"的本质区别
+
+常见做法是：在 PC 上用 SPEC 官方工具链（`runspec` / `specperl` + 官方 flags）编译出官方二进制，
+再用 `adb push` 推进手机运行，把屏幕上的数字当作"这台手机跑 SPEC 的结果"。
+**本项目不这样做，也不等价于这样做**：
+
+| 维度 | 官方口径（runspec + SPEC 工具链） | 本项目 BYOB 通路 |
+|---|---|---|
+| 编译器 / 工具链 | SPEC 官方 flags.xml 指定的编译器与选项，分 base / peak 两档 | 用户自备介质 + Android NDK/Clang，**单一固定优化等级**，不做 base/peak 分档 |
+| 输入集 | 官方 test / train / ref 三档，规模与内容由官方给定 | 用户自备（本仓库**不附带**任何数据集） |
+| 运行规则 | 官方 run rules：迭代控制、报告格式、可复现性、结果上报流程 | 无。只做"跑一次 + 与参考输出比对是否一致" |
+| 产出指标 | SPECspeed / SPECrate / SPECratio 等官方指标 | **不产出任何 SPEC 指标**；只记录墙钟耗时与"输出是否与参考一致" |
+| 结果用途 | 可对外公布的官方成绩 | 仅供本机自证与回归对比，**不得与任何公布的 SPEC 成绩比较** |
+
+补充说明一个容易被误读的点：组件流水线里使用 `-DSPEC` 编译，目的是让**程序的输出**与官方
+参考输出一致（否则校验对不上），这属于"输出保真"，**不意味着**获得了官方编译口径或官方成绩。
+
+### 2. 明确禁止的表述与用法
+
+- 不得把本项目的结果称为 SPEC 成绩、SPEC 分数、SPECratio、SPECspeed、SPECrate；
+- 不得用本项目的结果与 spec.org 公布的任何数值做比较、排名或折算；
+- 不得把本项目描述为"SPEC 移植版""SPEC for Android"，或暗示与 SPEC 存在隶属、赞助、认证关系；
+- 本项目的终端判分只有两种含义：**输出与参考一致** / **不一致**，与分数无关。
+
+### 3. 分发边界
+
+本项目**不分发** SPEC 的源码、输入集（test/train/ref）、参考输出与官方工具链 —— 它们都是商业许可内容，
+仓库 `.gitignore` 已排除 `SPEC2017/`。组件包只能由用户用**自己合法持有的介质**编译生成。
+`tools/spec2017/` 里的脚本只是"把用户自备源码编成 Android 可执行文件、并与参考输出做一致性比对"的
+工具链，不构成对 SPEC 任何内容的再分发。
+
+---
+
+## 九、 许可、商标与合规
 
 ### 1. 许可
 

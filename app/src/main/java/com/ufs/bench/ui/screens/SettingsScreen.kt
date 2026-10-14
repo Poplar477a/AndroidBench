@@ -286,7 +286,14 @@ fun SettingsScreen(
                         "结果口径：",
                         "· 内置基准为上游源码的裁剪移植（CoreMark 经移植包装、STREAM 为变体内核、tinymembench 裁剪移植）",
                         "· 结果一律表述为「相对本机自标定基线」的本地测量，不代表任何官方成绩，也未经官方认证",
-                        "· 项目以 Apache-2.0 许可发布；第三方组件版权与许可见仓库 NOTICE 与 THIRD_PARTY_LICENSES.md"
+                        "· 项目以 Apache-2.0 许可发布；第三方组件版权与许可见仓库 NOTICE 与 THIRD_PARTY_LICENSES.md",
+                        "",
+                        "SPEC 边界：",
+                        "· 本应用不分发 SPEC 的任何源码/输入集/参考输出/官方工具链；组件包须由用户用自备介质生成",
+                        "· 与「常规用 adb 推送 SPEC 官方二进制到手机运行」不是一回事：官方口径需要 SPEC 官方",
+                        "  工具链、官方 flags（base/peak 分档）、官方输入集与官方 run rules，本通路不具备这些条件",
+                        "· 本通路的判分只表示「输出与参考一致 / 不一致」，不产出任何 SPEC 指标，",
+                        "  不得称为 SPEC 成绩，也不得与 spec.org 公布的任何数值比较"
                     ).joinToString("\n"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant

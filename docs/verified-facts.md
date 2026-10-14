@@ -1639,3 +1639,44 @@ prepare_sources.sh / build_bench.sh / parse_object.pl / required_files.py / READ
 - **flavor 覆盖生效**：两包各 15 个图标 PNG，体积**全部不同**（如 CH.png：lab 16,764 B vs standard 2,996 B）；
 - 像素自检：全密度方图/圆图/前景尺寸正确，圆角 alpha=0、圆心 alpha=255，颜色数 lab 186 / standard 46（非空白）。
 
+
+---
+
+## 2026-10-14 18:2x（第 36 轮）：根目录整理（extra/）+ GitHub 源码副本导出
+
+### A. 多余文件集中到 extra/（根目录只剩工程本身与工作树）
+
+移入 extra/ 的内容：
+
+| 条目 | 说明 |
+|---|---|
+| qpm-*.cmd（4 个，**原为已跟踪**） | QPM/WSL 的 Windows 批处理，与本项目无关 |
+| .deliver/ | 早期交付快照（UFSBenchmark/ 副本 + source-20261012.zip） |
+| .buildlogs/ | 早期构建日志 |
+| .spec2017-{iso,raw,out,req}/ | SPEC 接入中间产物（脚本默认输出目录，按需重建） |
+| CDM-HOMOLAB.7z / dynamo_bench / probe_ok/ / ref_zip/ | 用户归档、x86_64 宿主构建产物、空探针目录、测试 zip 的解包 |
+| 4k level+mix lite.fio | 用户 fio 作业文件（与 ref_zip 那批同源） |
+
+另：如何测试顺序写入.zip（已跟踪的用户测试说明）归档到 docs/。
+
+新增 extra/README.md 逐项说明"是什么/能否删"；.gitignore 增加 extra/ 下的归档模式与 source-export/。
+
+**刻意留在根目录的东西（并在 extra/README.md 里写明了原因）**：
+.tools/（13 GB SDK/NDK/JDK，build.sh 写死路径）、.gradle/、.build.lock（build.sh 的 flock 锁）、
+SPEC2017/（4.1 GB 介质树，tools/spec2017 流水线输入）、.evidence/（372 MB 证据归档，docs 有引用）、
+keystore*/local.properties（构建必需）。
+
+### B. GitHub 源码副本（source-export/）
+
+    git archive HEAD | tar -x -C source-export/UFSBenchmark-0.1.0-Alpha
+
+- 文件数 **228 = git ls-files 228**（完全一致，说明只含版本库内容）；
+- 解包 7.2 MB，另打 **UFSBenchmark-0.1.0-Alpha-source.zip** 4.3 MB（sha256 6c96ed07…）；
+- **不含**：SPEC2017/ 介质树、.tools/、.evidence/、dist/、keystore*/（已逐一检查）；
+- source-export/MANIFEST.txt 记录 HEAD sha、文件数、生成方式与内容边界；
+- source-export/ 已 gitignore（可由 git archive 随时重建）。
+
+### C. 备注
+- 本轮新出现的 docs/宣传稿.md 是用户放入的 0.1.0-Alpha 宣传稿，已随提交纳入版本库；
+- 本机没有 zip 命令，打包改用 python3 -m zipfile。
+

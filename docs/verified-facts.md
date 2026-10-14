@@ -1197,3 +1197,29 @@ BenchmarkViewModel「内置微基准工作负载 / 内置微基准执行中」�
   a.out / *.7z / *.fio / ref_zip/ / .buildlogs/；
 - 复核：SPEC2017/（4.1 GB 许可内容）与 .tools/（13 GB SDK）均未入库。
 
+
+### I. 动态二进制准入实测（更正后的验证，模拟器 08:3x）
+用**动态链接**的 arm64 二进制重打组件包（57 KB，二进制 20 KB），导入与 verify 均通过：
+
+    [import] 包大小：58435 字节
+    [import] ok=true 文件=5 字节=1334343
+    [import] 二进制 sha256=66ec58c8…
+    [import] 依赖=libm.so, libdl.so, libc.so
+    [import] 通过：已就位 .../files/byob/519.lbm_r，二进制 通过：arm64 ELF，依赖 3 项全部在白名单内
+
+    > verify 519.lbm_r
+    e_machine   : 0xb7
+    is64        : true
+    needed      : libm.so, libdl.so, libc.so
+    message     : 通过：arm64 ELF，依赖 3 项全部在白名单内
+
+结论：**G 节的更正得到设备端证实** —— bionic 白名单接受 NDK 动态二进制，
+组件包无需静态链接（57 KB vs 2.7 MB），静态方案只在需要免依赖分发时才有意义。
+
+### J. 本轮状态与唯一剩余阻塞
+- 已完成：git 基线（c3c4c69 / c76346b，工作区 clean）、终端命令链实测（list / verify / run）、
+  动态包准入实测、文档更正；
+- **唯一剩余阻塞：红米 33ed7dff 处于锁屏状态**（dumpsys power: mWakefulness=Dozing，界面停在解锁页）。
+  arm64 真机的 run 成功路径（沙箱执行 + oracle 判分 + 耗时）必须解锁后才能验证；
+  在 x86_64 宿主上 run 会且应当诚实失败（exit -1 / 0.000 s / oracle 报输出缺失），不得据此推断真机行为。
+

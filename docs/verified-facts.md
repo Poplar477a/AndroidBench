@@ -1405,7 +1405,10 @@ BenchmarkViewModel「内置微基准工作负载 / 内置微基准执行中」�
 
 ### A. 推送内容（一加 15，序列号 3B15AX02DWK00000）
 - 设备画像：PLK110 / OnePlus / **Android 17（SDK 37）** / **arm64-v8a** / SoC **SM8850** / **已 root**（KernelSU，u:r:ksu:s0）/ 未锁屏；
-- 安装：`app-lab-release.apk`（含第 28 轮 4 个 BYOB 修复）✓ + 刷新 `com.ufs.bench`（standard）✓；
+- 安装：`app-lab-release.apk`（含第 28 轮 4 个 BYOB 修复）✓；
+  **standard 版（`com.ufs.bench`）覆盖安装失败**：`INSTALL_FAILED_UPDATE_INCOMPATIBLE: Existing package com.ufs.bench signatures do not match newer version`
+  —— 该机原有的是上一次会话的另一个签名版本（lastUpdateTime 2026-10-13 09:15），保持原样未动；
+  若要换成当前 release 签名版必须先卸载（会清数据），需用户确认。
 - 组件包：`519.lbm_r.zip`、`505.mcf_r.zip` 推入 `/sdcard/Download/` 并触发媒体扫描 ✓；
 - 应用内导入：两个包都「通过：已就位 …二进制 通过：arm64 ELF，依赖 3 项全部在白名单内」✓。
 

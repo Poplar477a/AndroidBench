@@ -241,3 +241,14 @@ lib 目录执行原生二进制），源码在本仓库（`tools/sandbox_test/by
 jniLibs 里的（实测 935 KB → 139 KB），这属正常，**不能**用"字节相等"判定漂移，
 要比对的是 jniLibs 里的文件本身。
 
+
+### 5. 应用图标（2026-10 更新）
+
+- 源图：tools/icon/source/lab.png（lab 版）、tools/icon/source/standard.jpg（standard 版），均 1280×1280；
+- 重新生成：tools/icon/make_icons.sh（用 .tools/jdk-17 的 ImageIO，无需第三方图像库）；
+- 每个 flavor 产出 mipmap-*/ic_launcher{,_round}.png、drawable-*/ic_launcher_foreground.png、
+  mipmap-anydpi-v26/ic_launcher{,_round}.xml、values/ic_launcher_background.xml；
+- 两个坑（已记档）：
+  1) 圆形遮罩必须用 setClip(Ellipse) + drawImage —— AlphaComposite.SrcIn + fill 实测不生效；
+  2) release APK 会缩短资源文件名，核验图标要看 aapt2 dump resources 并比对两包 PNG 体积，不能按名找。
+

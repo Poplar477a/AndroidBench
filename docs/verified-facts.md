@@ -1598,3 +1598,44 @@ prepare_sources.sh / build_bench.sh / parse_object.pl / required_files.py / READ
 - 工作区干净；交付物为 dist 下两个签名 APK（v2 方案，证书 CN=UFS Benchmark…，指纹 e79e1ba0…）
   与 SHA256SUMS.txt；版本 0.1.0-Alpha（versionCode 2）。
 
+
+---
+
+## 2026-10-14 16:2x（第 35 轮）：更新应用图标（两个 flavor 各自专属）
+
+### A. 素材与归属
+
+用户在项目根目录放入两张 1280×1280 源图；按文件名归属到两个 flavor（替换同名文件即可重生成）：
+
+| 源图 | 归档位置 | flavor |
+|---|---|---|
+| Lab.png（RGBA） | tools/icon/source/lab.png | lab（com.ufs.bench.lab） |
+| user.jpg（不透明） | tools/icon/source/standard.jpg | standard（com.ufs.bench） |
+
+两张图都是**深红底满幅设计**（主色 #870002 占 77% / #870102 占 70%，均无透明区）——
+所以"取四角均色当纯色底 + 画面缩到 62% 居中"这套做法正好无缝（画面自带的底与背景同色）。
+
+### B. 生成内容（tools/icon/MakeIcons.java + make_icons.sh）
+
+每个 flavor 产出：
+- mipmap-{mdpi,hdpi,xhdpi,xxhdpi,xxxhdpi}/ic_launcher.png（48/72/96/144/192）
+- 同目录 ic_launcher_round.png（圆形 alpha 遮罩）
+- drawable-<密度>/ic_launcher_foreground.png（108dp 画布、画面 62% 居中，落在安全区内）
+- mipmap-anydpi-v26/ic_launcher{,_round}.xml（自适应图标描述）
+- values/ic_launcher_background.xml（背景色取源图四角均色）
+
+### C. 两个实测结论（都已写进代码注释）
+
+1. **圆形遮罩不能用 AlphaComposite.SrcIn + fill** —— 实测角像素 alpha 仍是 255（等于没遮罩）；
+   必须用 **setClip(Ellipse) + drawImage**，角 alpha=0 / 心 alpha=255 才正确。
+2. **release APK 会缩短资源文件名**（res/8c.png 之类），按名字在 APK 里找图标会一无所获；
+   正确核验方式：aapt2 dump resources 看资源表 + 比对两包同名 PNG 的体积。
+
+### D. 核验结果
+
+- 构建：两个 flavor 均 BUILD SUCCESSFUL、0 告警；
+- 资源表：两包都有 color/ic_launcher_background、drawable/ic_launcher_foreground、
+  mipmap/ic_launcher、mipmap/ic_launcher_round；
+- **flavor 覆盖生效**：两包各 15 个图标 PNG，体积**全部不同**（如 CH.png：lab 16,764 B vs standard 2,996 B）；
+- 像素自检：全密度方图/圆图/前景尺寸正确，圆角 alpha=0、圆心 alpha=255，颜色数 lab 186 / standard 46（非空白）。
+

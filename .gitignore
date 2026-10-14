@@ -52,3 +52,16 @@ dist/
 .spec2017-iso/
 .spec2017-raw/
 .spec2017-req/
+
+# 归档区：与主工程无关或已归档的内容（extra/README.md 有逐项说明）
+extra/.buildlogs/
+extra/.deliver/
+extra/.spec2017-*/
+extra/CDM-HOMOLAB.7z
+extra/dynamo_bench
+extra/probe_ok/
+extra/ref_zip/
+extra/*.fio
+
+# GitHub 源码导出副本（由 git archive 生成，可随时重建）
+source-export/

@@ -201,6 +201,11 @@ object ByobTerminal {
             val dir = File(ctx.getExternalFilesDir(null), "byob").apply { mkdirs() }
             File(dir, id + ".result.txt").apply { writeText(outcome.toText()) }
         }
+        // 导出到**公共 Documents/UFSBench**（用户要求）：重名自动加 -2/-3 序号，绝不覆盖既有结果。
+        // 失败不影响主流程（私有副本仍在，cat <id> 可看），但必须如实打印失败。
+        val exported = withContext(Dispatchers.IO) {
+            ResultExporter.export(ctx, id + ".result.txt", outcome.toText())
+        }
         val bundleDir = File(bundlesDir(ctx), id)
         val binName = Regex("\"binary_path\"\\s*:\\s*\"([^\"]+)\"")
             .find(File(bundleDir, "runner.json").takeIf { it.isFile }?.readText() ?: "")
@@ -212,12 +217,18 @@ object ByobTerminal {
             "  退出码 " + s.exitCode + (if (s.seccompKilled) "（被 seccomp 拦截）" else "") +
             "  耗时 " + String.format("%.3f", s.wallSeconds) + " s" +
             "  峰值内存 " + String.format("%.1f", s.maxRssKb / 1024.0) + " MB" +
-            "  判分 " + (if (s.oracleVerified) "通过" else "未通过"))
+            "  判分 " + when {
+                !s.oracleApplicable -> "未判分（无参考输出）"
+                s.oracleVerified -> "通过"
+                else -> "未通过"
+            })
         append("产物位置：")
         append("  · 结果文件（完整输出）  " + resultFile.absolutePath)
         append("  · 组件包目录            " + bundleDir.absolutePath)
         append("  · 组件二进制            " + binName)
         append("  · 查看完整输出          输入 cat " + id)
+        append("  · 公共目录导出          " +
+            (exported ?: "失败（公共目录不可写；私有副本仍可用 cat " + id + " 查看）"))
         if (!s.oracleVerified) {
             append("  · 判分说明              " + outcome.oracleDetail.replace('\n', ' ').take(200))
         }

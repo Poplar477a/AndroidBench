@@ -45,6 +45,8 @@ object SandboxedExecutor {
         val oracleDetail: String,
         val startedAtEpochMs: Long,
         val deviceThermalNote: String
+        ,/** 是否真的执行了判分（oracle=none 或无参考输出时为 false：既非通过也非不通过） */
+        val oracleApplicable: Boolean = false
     )
 
     private external fun nativeRunIsolated(

@@ -1480,3 +1480,48 @@ capset → rlimits → chdir → about-execve` ✓
   → 已改为 org.json.JSONObject 组装；
 - JS 模板字符串中 String.raw **不阻止** 美元大括号插值（只影响转义），写补丁脚本时要用占位符替换。
 
+
+---
+
+## 2026-10-14 14:2x（第 32 轮）：终端运行结果导出到公共 Documents（含重名处理）
+
+需求：终端运行（尤其是自定义 ELF）的结果文件直接导出到 **Documents** 文件夹，并注意重名问题。
+
+### A. 实现
+- 新增 spec/ResultExporter.kt：走 **MediaStore**（Android 10+ 分区存储下无法用 File 路径写公共目录；
+  MediaStore 插入自己的文件不需要任何存储权限，且文件管理器可见），落点 **Documents/UFSBench/**；
+  写入用 IS_PENDING 两阶段，失败时删掉半成品，不留 0 字节文件；API 28 及以下如实返回失败
+  （没有 RELATIVE_PATH，公共目录需存储权限），私有副本仍在。
+- **重名处理**：先按 DISPLAY_NAME + RELATIVE_PATH 查询是否已存在，存在则依次尝试
+  <名>-2 / -3 …（最多 99 次），极端情况退化为带时间戳；**绝不静默覆盖既有结果**。
+- 终端 run 的"产物位置"新增一行「公共目录导出 Documents/UFSBench/<文件名>」；
+  导出失败也如实打印失败原因与替代查看方式（cat <id>）。
+- 顺带修措辞：oracle=none 的用例不再显示"判分 未通过"（那是"未判分"）——
+  新增 oracleApplicable 三态：未判分（无参考输出）/ 通过 / 未通过。
+
+### B. 真机验证（红米 33ed7dff，同一 ELF 连跑三次）
+    [完成] mytool  退出码 0  耗时 0.565 s  峰值内存 3.4 MB  判分 未判分（无参考输出）
+    · 公共目录导出  Documents/UFSBench/mytool.result-3.txt
+
+    /sdcard/Documents/UFSBench/：
+      mytool.result.txt    （第 1 次）
+      mytool.result-2.txt  （第 2 次）
+      mytool.result-3.txt  （第 3 次）    ← 三次互不覆盖，重名处理生效
+    文件内容含 ELF 自己的输出：custom-elf OK acc=827357840561519684 elapsed=0.492 s
+
+### C. 顺带补验：裸 ELF 的运行链路（第 31 轮遗留的待验项）
+用极简 arm64 ELF（自编译，200M 次整数迭代 + 自计时）就位成最小组件包后：
+```
+    [完成] mytool  退出码 0  耗时 5.568 s（首次）/ 0.559 s（第二次）
+    --- stdout ---
+    custom-elf OK acc=827357840561519684 elapsed=0.492 s
+    --- stderr ---
+    child:1-before-netns → … → child:9-about-execve   （沙箱九步全过）
+```
+**诚实说明**：ELF 自测只有 0.492 s，而首次整体 wall 5.568 s —— 差额是沙箱建立（netns/capset/seccomp）
+与冷启动开销，说明"单次 wall 时间"不能当作被测程序的性能结论（第二次 0.559 s 即为此佐证）。
+
+### D. 注意
+公共 Documents 下的结果文件由用户自行管理；应用只负责"每次运行导出一份、不覆盖旧的"，
+长期使用会累积若干文件（每个用例每次一份），需要时可批量删除该目录。
+

@@ -130,6 +130,7 @@ object PrecompiledRunner {
             wallSeconds = outcome.seconds,
             maxRssKb = outcome.maxRssKb,
             oracleVerified = oracle.verified,
+            oracleApplicable = oracle.applicable,
             oracleDetail = oracle.detail,
             startedAtEpochMs = started,
             deviceThermalNote = ""

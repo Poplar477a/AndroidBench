@@ -152,6 +152,9 @@ CoreTopologyDetector 读 /proc/cpuinfo 的 CPU part：所有核同构且非小�
 
 ---
 
+
+---
+
 ## 七、 仓库布局与 SPEC 组件流水线（2026-10 整理）
 
 ### 1. 顶层布局
@@ -173,11 +176,11 @@ CoreTopologyDetector 读 /proc/cpuinfo 的 CPU part：所有核同构且非小�
     python3 tools/spec2017/build_components.py --spec-root SPEC2017 --out .evidence/byob_pkg
 
 **官方口径（实测确认，详见 docs/verified-facts.md 第 27 轮）**：
-必须加  编译 —— 官方参考输出即在该宏下生成；不加会走  分支，
-输出行数与数值都可能与官方参考不符。mcf 另需  并链接基准自带的
-（官方用 SPEC 自己的 qsort，排序稳定性不同会改变迭代轨迹）。
+必须加 `-DSPEC` 编译 —— 官方参考输出即在该宏下生成；不加会走 `#if !defined(SPEC)` 分支，
+输出行数与数值都可能与官方参考不符。mcf 另需 `-DSPEC_HAVE_INTTYPES_H` 并链接基准自带的
+`src/spec_qsort/`（官方用 SPEC 自己的 qsort，排序稳定性不同会改变迭代轨迹）。
 
-产出的  即组件包（runner.json + bin/ + data/），在应用「终端」页用
+产出的 `<id>.zip` 即组件包（runner.json + bin/ + data/），在应用「终端」页用
 「导入组件包(.zip)」导入，然后：
 
     list                # 列出已就位组件
@@ -185,5 +188,5 @@ CoreTopologyDetector 读 /proc/cpuinfo 的 CPU part：所有核同构且非小�
     run <id>            # 沙箱执行 + 与官方参考容差判分
 
 注意：组件包内是 **arm64** 二进制，必须在 arm64 真机运行；x86_64（含带 ARM 翻译的模拟器）
-上  会诚实失败（exit -1 / 无输出文件），不会给出虚假成绩。
+上 `run` 会诚实失败（exit -1 / 无输出文件），不会给出虚假成绩。
 

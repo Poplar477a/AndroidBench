@@ -179,7 +179,35 @@ object ByobTerminal {
         // 而本函数由 rememberCoroutineScope 启动、默认跑在 Dispatchers.Main ——
         // 直接调用会让主线程卡住，测试规模稍大即触发 ANR（2026-10-14 真机实测）。
         val outcome = withContext(Dispatchers.IO) { PrecompiledRunner.run(ctx, id) }
-        appendBlock(outcome.toText())
+        val s = outcome.summary
+
+        // 结果落盘：终端与无界面入口（--es spec_run）共用同一份产物，便于 cat 与外部取证
+        val resultFile = withContext(Dispatchers.IO) {
+            val dir = File(ctx.getExternalFilesDir(null), "byob").apply { mkdirs() }
+            File(dir, id + ".result.txt").apply { writeText(outcome.toText()) }
+        }
+        val bundleDir = File(bundlesDir(ctx), id)
+        val binName = Regex("\"binary_path\"\\s*:\\s*\"([^\"]+)\"")
+            .find(File(bundleDir, "runner.json").takeIf { it.isFile }?.readText() ?: "")
+            ?.groupValues?.get(1)?.substringAfterLast('/') ?: id
+
+        // 终端只报「已完成 + 产物位置」：完整 stdout/stderr 一律进结果文件（cat <id> 查看），
+        // 避免把几十行原始输出糊在终端上。
+        append("[完成] " + id +
+            "  退出码 " + s.exitCode + (if (s.seccompKilled) "（被 seccomp 拦截）" else "") +
+            "  耗时 " + String.format("%.3f", s.wallSeconds) + " s" +
+            "  峰值内存 " + String.format("%.1f", s.maxRssKb / 1024.0) + " MB" +
+            "  判分 " + (if (s.oracleVerified) "通过" else "未通过"))
+        append("产物位置：")
+        append("  · 结果文件（完整输出）  " + resultFile.absolutePath)
+        append("  · 组件包目录            " + bundleDir.absolutePath)
+        append("  · 组件二进制            " + binName)
+        append("  · 查看完整输出          输入 cat " + id)
+        if (!s.oracleVerified) {
+            append("  · 判分说明              " + outcome.oracleDetail.replace('\n', ' ').take(200))
+        }
+        append("")
+        com.ufs.bench.util.CpuAffinityAdvice.advice(binName).forEach { append(it) }
     }
 
     private fun doCat(ctx: Context, id: String) {

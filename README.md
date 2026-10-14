@@ -3,7 +3,7 @@
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/badge/release-0.1.0--Alpha-orange.svg)](../../releases)
 [![Platform](https://img.shields.io/badge/platform-Android%208.0%2B%20(API%2026)-green.svg)](#)
-[![Network](https://img.shields.io/badge/network-none-brightgreen.svg)](#九-许可商标与合规2026-10-整改)
+[![Network](https://img.shields.io/badge/network-none-brightgreen.svg)](#八-许可商标与合规)
 
 > **Android 移动端存储性能基准工具**：参考 FIO 与 Iometer 的测试模型**独立实现**，
 > 内置上游源码裁剪的算力/内存层次基准（CoreMark / STREAM / tinymembench），
@@ -117,93 +117,7 @@ bash tools/build_fio_arm64.sh
 
 ---
 
-## 六、 定向调优档位与构建开关（2026-10 更新）
-
-### 1. 打包的 arm64 档位（共 10 支，唯一事实源 = app/src/main/cpp/profiles.cmake）
-| 档位 | 工具链 | 调优方式 | 说明 |
-|---|---|---|---|
-| baseline | NDK r30 Clang 21 | 无（generic） | 公平基线，所有设备可用 |
-| x1 / x2 / x3 / x4 / x925 | NDK r30 Clang 21 | -mtune=对应 Cortex 大核 | 各代 Cortex 大核定向 |
-| c1ultra | 独立 LLVM 23.1.3 | -mtune=c1-ultra | 实验档（实验性 = 非 NDK 内置工具链） |
-| oryon1 / oryon2 | Snapdragon LLVM 19 | -mtune=oryon-* | 实验档，骁龙 8 Elite 系列 |
-| oryon2isa | Snapdragon LLVM 19 | -mcpu=oryon-2-v1 | 全大核 ISA 专用档（见第 2 节） |
-
--mtune 只调调度、不改变指令集要求，可安全运行于含小核的异构 SoC；
--mcpu 会启用该微架构完整 ISA（实测 oryon2isa 产物含 1526 条 SVE 指令，同源码 -mtune 版为 0），
-只允许在**同构全大核**设备上加载。
-
-### 2. 全大核运行期门禁（ISA 档的硬前提）
-CoreTopologyDetector 读 /proc/cpuinfo 的 CPU part：所有核同构且非小核/中核才判为全大核（fail-closed）。
-不满足时加载路径拒绝加载 ISA 档并回退 baseline，界面与 logcat 明说原因（降级不得静默）。
-实测：一加 15（8×0x002）放行；红米 SM7475（1×0xd48 + 3×0xd47 + 4×0xd46）拒绝且不崩溃。
-
-### 3. 构建开关（默认全关）
-| 环境变量 | 作用 |
-|---|---|
-| DYNAMO_PGO_GENERATE=1 | 产出插桩库（-fprofile-generate），用于真机采集 |
-| DYNAMO_PGO_PROFILE=<.profdata> | 产出应用档（-fprofile-use）；与上面互斥 |
-| DYNAMO_LTO=thin 或 full | 追加 -flto=<mode> 与 -Wl,-O2（披露串记 LTO=） |
-| DYNAMO_ISA=allbig | 实验性全局覆盖：-mtune 换 -mcpu（正式以 profiles.cmake 的 DYNAMO_ISA_* 为准） |
-| DYNAMO_PGO_SCOPE=all | 允许非 SDLLVM 档位也吃 PGO 参数（试点用） |
-| DYNAMO_EXPERIMENTAL_OVERRIDE=<档位> | 只构建指定档位（不改 catalog 与实验档名单） |
-| DYNAMO_TOOLCHAIN_OVERRIDE=<tc> | 覆盖本次构建的工具链（试点用） |
-
-打包注意：build.sh 在 assemble 任务里会重跑实验档脚本（不带 PGO 环境变量），会把刚生成的插桩库覆盖掉 ——
-需要保留插桩/应用档时请用 .evidence/pack_only.sh。
-
-### 4. 产物门禁与证据纪律
-- .evidence/scan_apk_allabi.py：全 ABI × 全档位检查 16 KB 对齐、arm64 SVE=0、无 libc++_shared、无插桩残留；
-  ISA 档的 SVE>0 属预期，仅在"运行期门禁四处前提自动核验通过"时豁免并醒目打印；把 ISA 库塞进常规档位仍判红（负样本已回归）。
-- .evidence/check_isa_catalog.py：profiles.cmake 与 Kotlin ISA 白名单与归一化白名单三方一致。
-- .evidence/check_jni_contract.py：JNI 契约（参数/符号/R8 keep）。
-- 取设备二进制一律用 base64 或 adb pull（adb shell cat 会被 Windows PTY 注入 CRLF，曾把 47760 字节的 .profraw
-  拉成 47902 字节、版本号读成 2573）；.evidence/ev.py 的 pull_bin() 已内置长度校验。
-- 档位是否真的生效，只看 logcat 里 engine load 行的 active= 与 fallback=；"应用能跑完"不算验证。
-
----
-
-
----
-
-## 七、 仓库布局与 SPEC 组件流水线（2026-10 整理）
-
-### 1. 顶层布局
-
-| 路径 | 作用 | 是否入库 |
-|---|---|---|
-| app/ | UFS Benchmark 应用（Kotlin/Compose + NDK C/C++/ASM） | 是 |
-| app/src/main/cpp/bench/ | 内置基准内核层（CoreMark / STREAM / tinymembench，裁剪自上游） | 是 |
-| AndroidBench/ | 独立的 Android 基准套件（内核层 + CLI + Kotlin 规模策略） | 是（upstream/ 素材除外） |
-| tools/spec2017/ | SPEC CPU2017 → Android 组件包 构建流水线 | 是 |
-| docs/ | 需求/契约/证据文档（含 verified-facts.md 逐轮实测记录） | 是 |
-| .evidence/ | 过程证据（截图、日志、构建产物、组件包） | 否（.gitignore） |
-| SPEC2017/ | SPEC CPU2017 安装介质解包树（商业许可内容） | 否（.gitignore） |
-| AndroidBench/upstream/ | 上游源码采集区（1.2 GB，按 SOURCES_MANIFEST.md 可重建） | 否（.gitignore） |
-| .tools/ | Android SDK / NDK | 否（.gitignore） |
-
-### 2. SPEC2017 → 组件包（BYOB）流水线
-
-    python3 tools/spec2017/build_components.py --spec-root SPEC2017 --out .evidence/byob_pkg
-
-**官方口径（实测确认，详见 docs/verified-facts.md 第 27 轮）**：
-必须加 `-DSPEC` 编译 —— 官方参考输出即在该宏下生成；不加会走 `#if !defined(SPEC)` 分支，
-输出行数与数值都可能与官方参考不符。mcf 另需 `-DSPEC_HAVE_INTTYPES_H` 并链接基准自带的
-`src/spec_qsort/`（官方用 SPEC 自己的 qsort，排序稳定性不同会改变迭代轨迹）。
-
-产出的 `<id>.zip` 即组件包（runner.json + bin/ + data/），在应用「终端」页用
-「导入组件包(.zip)」导入，然后：
-
-    list                # 列出已就位组件
-    verify <id>         # ELF 准入核验（arm64 + bionic 依赖白名单）
-    run <id>            # 沙箱执行 + 与官方参考容差判分
-
-注意：组件包内是 **arm64** 二进制，必须在 arm64 真机运行；x86_64（含带 ARM 翻译的模拟器）
-上 `run` 会诚实失败（exit -1 / 无输出文件），不会给出虚假成绩。
-
-
----
-
-## 八、 打包与产物（2026-10 整理）
+## 六、 打包与产物
 
 ### 1. 出包
 
@@ -265,7 +179,75 @@ jniLibs 里的（实测 935 KB → 139 KB），这属正常，**不能**用"字�
 
 ---
 
-## 九、 许可、商标与合规（2026-10 整改）
+## 七、 自定义 ELF 与组件包 打包规则
+
+终端（实验室版）可运行**用户自备的 arm64 可执行文件**，两种投喂方式。
+
+### 1. 裸 ELF（最简）
+
+把 arm64 可执行文件（自己写的微基准、或从别处拿到的单文件程序）放进手机，用
+「终端 → 导入组件包(.zip)」选中它即可：应用会自动生成**最小组件包** —— 无命令行参数、
+不做参考输出判分，`benchmark_id` 取文件名。
+
+| 准入项 | 要求 |
+|---|---|
+| 架构 | **aarch64**（ELF `e_machine = 0xB7`）；x86_64 / arm32 一律拒绝 |
+| 依赖 | 只能是 bionic 白名单：`libc.so` `libm.so` `libdl.so` `liblog.so` `libz.so` `libstdc++.so` `libc++_shared.so` `libandroid.so` `libatomic.so` |
+| 禁止 | glibc 名字：`libc.so.6` `libm.so.6` `libpthread.so.0` `libgcc_s.so.1` `ld-linux-aarch64.so.1` 等 —— 需要 glibc 的请 **静态链接**后再打包 |
+| 权限 | 可执行位；导入流程会自动就位到应用私有目录并做 ELF 准入核验 |
+
+### 2. .zip 组件包（支持传参 + 与参考输出比对判分）
+
+zip 内**即根目录，不要再套一层**：
+
+    runner.json            必需
+    bin/<可执行文件>        必需，arm64 ELF
+    data/input/…           可选，输入数据集
+    data/output/<参考输出>  可选，判分用的参考输出
+
+`runner.json` 字段：
+
+    {
+      "benchmark_id": "mybench",
+      "binary_path": "bin/mybench",
+      "command_args": ["--size", "1024", "data/input/in.dat"],
+      "stdout_file": "mybench.out",
+      "oracle_rule": {
+        "type": "numeric_tolerance",
+        "reference_file": "data/output/ref.out",
+        "abs_tolerance": 1e-7,
+        "rel_tolerance": 1e-4,
+        "ignore_line_patterns": ["runtime = ", "elapsed"]
+      },
+      "execution_profile": {
+        "affinity_policy": "none",
+        "cooldown_target_celsius": 0.0,
+        "max_execution_seconds": 600
+      }
+    }
+
+- `command_args` 中以 `data/` 开头的元素会被替换为**包内绝对路径**（输入放 `data/input/` 时用它）；
+- `oracle_rule.type = "none"` 表示**不判分**，只记录运行结果；
+- `ignore_line_patterns` 是**子串匹配**：命中的行两侧都不参与比对（耗时/内存地址这类每次运行都不同的行必须排除）；
+- `stdout_file` **不要用程序自己会写的文件名** —— 否则运行器不会落盘捕获到的 stdout，判分会拿错文件。
+
+### 3. 判分口径
+
+逐行比对：行内按空白切 token；两侧都能解析为数字时用 `|a-b| <= abs_tol + rel_tol*|b|`，
+否则按字符串精确比对；**空行两侧都忽略**。这是"与参考输出一致"的一致性判定，**不代表任何官方成绩**。
+
+### 4. 常见坑
+
+1. 组件包必须是 **arm64**；x86_64（含带 ARM 翻译的模拟器）上运行会诚实失败，不会给出虚假成绩；
+2. 程序按**裸文件名**打开输入文件时（例如 `100_100_130_cf_a.of`），输入要放**包根目录** —— 运行目录就是包根；
+3. 耗时/分配类行不排除，正确实现也会被判"不符"；
+4. 依赖 glibc 的二进制必须先 `-static` 静态链接。
+
+规范全文见 [docs/byob-打包规范.md](docs/byob-打包规范.md)；应用内「终端」输入 `spec` 会原样打印同一份内容。
+
+---
+
+## 八、 许可、商标与合规
 
 ### 1. 许可
 

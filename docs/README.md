@@ -10,7 +10,7 @@
 | agents/ | 协作约定：domain.md、issue-tracker.md、triage-labels.md |
 
 相关但不在本目录：
-- 仓库布局与 SPEC 组件流水线：见根 README 第七节
-- 组件流水线用法：见 tools/spec2017/README.md
+- 仓库布局与打包：见根 README 第六节；自定义 ELF/组件包打包规则见第七节
+- SPEC 组件流水线用法：见 tools/spec2017/README.md（原 README 第七节已删除）
 - AndroidBench 套件：见 AndroidBench/docs/（ARCHITECTURE / BENCHMARK_CATALOG / SCALE_MANAGEMENT / IMPLEMENTATION_LOG）
 

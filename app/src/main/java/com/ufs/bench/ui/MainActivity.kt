@@ -64,6 +64,10 @@ class MainActivity : ComponentActivity() {
                     val outcome = com.ufs.bench.spec.PrecompiledRunner.run(this, benchId)
                     val dir = java.io.File(getExternalFilesDir(null), "byob").apply { mkdirs() }
                     java.io.File(dir, benchId + ".result.txt").writeText(outcome.toText())
+                    // 与终端路径保持一致：同样导出到公共 Documents/UFSBench（重名自动加序号）
+                    val exported = com.ufs.bench.spec.ResultExporter.export(
+                        this, benchId + ".result.txt", outcome.toText())
+                    android.util.Log.i("UFSBench", "byob export=" + (exported ?: "失败"))
                     android.util.Log.i("UFSBench", "byob done id=" + benchId +
                         " exit=" + outcome.summary.exitCode +
                         " verified=" + outcome.summary.oracleVerified)

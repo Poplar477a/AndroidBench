@@ -1,5 +1,7 @@
 package com.ufs.bench.ui.screens
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -19,6 +21,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -247,6 +250,8 @@ fun SettingsScreen(
                         "需专业模式（普通应用受 Android 13+ SELinux 限制，读不到 sysfs）"
                     )
                 }
+                // 应用版本：直接取 BuildConfig（源头是 build.gradle.kts 的 versionName），不硬编码
+                AboutRow("应用版本", com.ufs.bench.BuildConfig.VERSION_NAME)
                 AboutRow("机型", hardwareInfo.deviceName.ifEmpty { "—" })
                 AboutRow("型号代码", hardwareInfo.deviceCode.ifEmpty { "—" })
                 AboutRow("系统版本", hardwareInfo.androidRelease.ifEmpty { "—" })
@@ -267,15 +272,35 @@ fun SettingsScreen(
         }
 
         // ---------- 作者署名（页尾） ----------
-        Text(
-            text = "Poplar477使用DeepSeek-V4.1Flash和Gemini3.8Flash开发",
+        val ctx = LocalContext.current
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 4.dp, bottom = 12.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
-        )
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = "Poplar477a 使用 DeepSeek-V4.1Flash、Gemini3.8Flash 和 GPT-6Sol/Terra 开发",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = "GitHub：https://github.com/Poplar477a",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.clickable {
+                    // 点击打开系统浏览器；没有浏览器时静默失败，不影响应用
+                    runCatching {
+                        ctx.startActivity(
+                            Intent(Intent.ACTION_VIEW, Uri.parse("https://github.com/Poplar477a"))
+                        )
+                    }
+                }
+            )
+        }
     }
 }
 

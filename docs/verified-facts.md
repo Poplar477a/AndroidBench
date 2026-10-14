@@ -1525,3 +1525,37 @@ capset → rlimits → chdir → about-execve` ✓
 公共 Documents 下的结果文件由用户自行管理；应用只负责"每次运行导出一份、不覆盖旧的"，
 长期使用会累积若干文件（每个用例每次一份），需要时可批量删除该目录。
 
+
+---
+
+## 2026-10-14 14:5x（第 33 轮）：署名/GitHub 链接/AI 名单/版本 0.1.0-Alpha + 出包与虚拟机测试
+
+### A. 设置栏改动（模拟器实测）
+- **署名**：页尾改为弹窗可点结构，文本为
+  "Poplar477a 使用 DeepSeek-V4.1Flash、Gemini3.8Flash 和 GPT-6Sol/Terra 开发"
+  （原先写的是 Poplar477，缺 a；AI 名单本轮加入 GPT-6Sol/Terra）
+- **GitHub 链接**：新增 "GitHub：https://github.com/Poplar477a"，点击 → ACTION_VIEW；
+  模拟器实测点击后前台变为 com.android.chromium/…ChromeTab（浏览器确实打开）
+- **版本**：build.gradle.kts 的 versionName = **0.1.0-Alpha**、versionCode = 2；
+  「关于」卡片新增一行「应用版本」，值直接取 BuildConfig.VERSION_NAME（**不硬编码**，源头唯一）
+  模拟器实测显示：应用版本 = 0.1.0-Alpha；aapt2 复核 package versionName='0.1.0-Alpha' versionCode='2'
+
+### B. 虚拟机（模拟器）测试结果
+| 项 | 结果 |
+|---|---|
+| 安装 0.1.0-Alpha lab 包 | Success |
+| 设置页署名 / AI 名单 | 正确显示（含 GPT-6Sol/Terra）✓ |
+| GitHub 链接点击 | 打开 Chrome ✓ |
+| 内置基准运行（低性能档起步） | 计时正常（已运行 7s → 13s → …）✓ |
+| 模拟器比值口径 | 页面如实显示"模拟器/虚拟机环境的指令翻译与宿主调度差异过大，与真机基线不可比；本页只展示原始读数，不给出比值" ✓ |
+
+### C. 顺带完成
+- 无界面入口（adb --es spec_run <id>）也导出结果到公共 Documents（此前只有终端路径导出）；
+- tinymembench 的 __attribute__((unused)) 标注：构建 **0 告警**；
+- dist/：UFSBenchmark-0.1.0-Alpha-{standard,lab}.apk + SHA256SUMS.txt；
+  修复后 sha256：standard 926d6997…、lab 2a103b5c…
+
+### D. 注意
+模拟器 1080×1920 竖屏、MuMu 侧为 1920×1080 横屏 —— 自动化脚本里的滑动坐标必须按实际屏幕取，
+本轮就因为用错坐标导致"设置页滚不动"的假象（不是应用问题）。
+

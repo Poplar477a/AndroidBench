@@ -247,7 +247,10 @@ static void tmb_write_c(unsigned char *restrict buf, size_t size)
     for (size_t i = 0; i < n; i++) p[i] = TMB_FILL_PATTERN;
 }
 
-/* 顺序拷贝：可移植 C 回退路径 */
+/* 顺序拷贝：可移植 C 回退路径。
+ * 仅在未启用 NEON 汇编（TMB_USE_NEON_ASM=0）时被调用，arm64 上会编译成"未使用函数"——
+ * 显式标注避免告警，同时保留回退路径不做裁剪。 */
+__attribute__((unused))
 static void tmb_copy_c(unsigned char *restrict dst, const unsigned char *restrict src, size_t size)
 {
     uint64_t *restrict d = (uint64_t *)(void *)dst;

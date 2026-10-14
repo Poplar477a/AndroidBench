@@ -44,3 +44,9 @@ a.out
 *.fio
 ref_zip/
 .buildlogs/
+
+# 构建产物与本地暂存（不入库）
+dist/
+.spec2017-iso/
+.spec2017-raw/
+.spec2017-req/

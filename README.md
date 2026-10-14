@@ -190,3 +190,54 @@ CoreTopologyDetector 读 /proc/cpuinfo 的 CPU part：所有核同构且非小�
 注意：组件包内是 **arm64** 二进制，必须在 arm64 真机运行；x86_64（含带 ARM 翻译的模拟器）
 上 `run` 会诚实失败（exit -1 / 无输出文件），不会给出虚假成绩。
 
+
+---
+
+## 八、 打包与产物（2026-10 整理）
+
+### 1. 出包
+
+    ./build.sh --max-workers=4 assembleStandardRelease assembleLabRelease
+
+| flavor | applicationId | 说明 |
+|---|---|---|
+| standard | com.ufs.bench | 常规版（FEATURE_ROOT_LAB=false） |
+| lab | com.ufs.bench.lab | 实验室版：BYOB 二进制测试、专业模式等（FEATURE_ROOT_LAB=true） |
+
+两者 applicationId 不同、签名相同，可同时安装。minSdk 26 / targetSdk 34 → 用 APK Signature
+Scheme **v2** 签名即可（v1 非必需）。
+
+### 2. 签名
+
+口令放在 `keystore.properties`（不入库，见 `.gitignore`）：
+
+    storeFile=keystore/ufs-bench.jks
+    keyAlias=ufsbench
+
+证书：`CN=UFS Benchmark, OU=Storage Lab, O=UFSBench, L=Shenzhen, ST=Guangdong, C=CN`
+SHA-256：`e79e1ba007e3978de51d71b9745ce940bbcd84c3a463fd8a89dcd5cc9b0acf44`
+
+**换签名会导致已安装的旧包无法覆盖安装**（`INSTALL_FAILED_UPDATE_INCOMPATIBLE`，需先卸载、会丢数据）——
+真机上已出现过一次（一加 15 上旧的 standard 包）。
+
+### 3. 产物目录 `dist/`（不入库）
+
+    dist/UFSBenchmark-<版本>-standard.apk
+    dist/UFSBenchmark-<版本>-lab.apk
+    dist/SHA256SUMS.txt      # sha256sum -c 校验
+    dist/README.md
+
+### 4. 沙箱助手必须与源码一致（防漂移）
+
+`app/src/main/jniLibs/<abi>/libbyob_run.so` 是**签入版本库的预编译可执行文件**（Android 只允许从
+lib 目录执行原生二进制），源码在本仓库（`tools/sandbox_test/byob_run.cpp` +
+`app/src/main/cpp/sandboxed_runner.cpp`）。规矩：
+
+    tools/sandbox_test/build_byob_helper.sh            # 从源码构建并与签入产物比对
+    tools/sandbox_test/build_byob_helper.sh --install  # 就地更新（之后必须重出 App 并在真机复验）
+
+本轮就靠它抓到一次真实漂移：arm64 助手与源码一致，**x86_64 那份是旧的**（早期改源码未同步），
+已就地更新为与源码一致。注意 AGP 打包时会 **strip** 原生库，所以 APK/设备里的助手字节数小于
+jniLibs 里的（实测 935 KB → 139 KB），这属正常，**不能**用"字节相等"判定漂移，
+要比对的是 jniLibs 里的文件本身。
+

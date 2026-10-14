@@ -35,6 +35,8 @@ object BundleManager {
         val oracleReference: String?,
         val absTolerance: Double,
         val relTolerance: Double,
+        /** 判分时忽略的行模式（SPEC 类基准的时间/分配行） */
+        val ignoreLinePatterns: List<String> = emptyList(),
         val affinityPolicy: String,
         val cooldownCelsius: Double,
         val maxSeconds: Int
@@ -156,6 +158,9 @@ object BundleManager {
             val args = ArrayList<String>()
             if (argsArr != null) for (i in 0 until argsArr.length()) args.add(argsArr.getString(i))
             val oc = o.optJSONObject("oracle_rule")
+            val ignoreArr = oc?.optJSONArray("ignore_line_patterns")
+            val ignore = ArrayList<String>()
+            if (ignoreArr != null) for (i in 0 until ignoreArr.length()) ignore.add(ignoreArr.getString(i))
             val ep = o.optJSONObject("execution_profile")
             JobConfig(
                 benchmarkId = id,
@@ -166,6 +171,7 @@ object BundleManager {
                 oracleReference = oc?.optString("reference_file", "")?.ifEmpty { null },
                 absTolerance = oc?.optDouble("abs_tolerance", 1e-7) ?: 1e-7,
                 relTolerance = oc?.optDouble("rel_tolerance", 1e-4) ?: 1e-4,
+                ignoreLinePatterns = ignore,
                 affinityPolicy = ep?.optString("affinity_policy", "none") ?: "none",
                 cooldownCelsius = ep?.optDouble("cooldown_target_celsius", 0.0) ?: 0.0,
                 maxSeconds = ep?.optInt("max_execution_seconds", 600) ?: 600

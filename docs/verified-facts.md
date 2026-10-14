@@ -1223,3 +1223,26 @@ BenchmarkViewModel「内置微基准工作负载 / 内置微基准执行中」�
   arm64 真机的 run 成功路径（沙箱执行 + oracle 判分 + 耗时）必须解锁后才能验证；
   在 x86_64 宿主上 run 会且应当诚实失败（exit -1 / 0.000 s / oracle 报输出缺失），不得据此推断真机行为。
 
+
+### K. 判分缺口发现与修复：ignore_line_patterns（本轮新增能力）
+**发现**：SPEC 类基准的官方输出里含**每次运行都不同**的行（LBM 的 usr/wct/MLUPS 计时行、
+以及本实现多打印的 allocateGrid 行）。OracleVerifier 是逐行 token 比对，
+这些行必然不符 → **正确实现也会被判"未通过"**（上一轮 run 在 x86_64 上没跑到判分环节，所以没暴露）。
+
+**修法**（对齐 SPEC 官方 runrules 的排除口径）：
+- runner.json 的 oracle_rule 新增可选字段 ignore_line_patterns；
+- OracleVerifier.verify 增加 ignorePatterns 参数：命中任一子串的行**两侧同时过滤**，
+  并在判分明细里如实写「按 ignore_line_patterns 忽略 N 行」（不隐藏忽略行为）；
+- JobConfig / BundleManager.parseRunnerJson / PrecompiledRunner 调用点同步；
+- 519.lbm_r 的包按此重打（patterns: usr: / wct: / MLUPS / allocateGrid）。
+
+**验证状态**：代码编译通过（BUILD SUCCESSFUL）；**判分行为的设备端验证仍卡在同一处** ——
+需要 arm64 真机执行成功后才有输出文件可比对；x86_64 模拟器上 run 连二进制都起不来（exit -1），
+判分只会如实报「输出文件缺失」，无法用来验证过滤逻辑。
+
+### L. 唯一剩余阻塞（重复强调，避免误判状态）
+红米 33ed7dff **处于锁屏**（isKeyguardShowing=true / mDreamingLockscreen=true，通知栏压在最上层）。
+解锁并保持亮屏后，一条脚本即可补完最后两件事：
+1. 导入 519.lbm_r_dyn.zip（58490 字节，含 ignore_line_patterns）→ verify（应显示依赖 3 项 + 通过）；
+2. run 519.lbm_r → 沙箱执行（预期 1~3 s）→ oracle 与 data/output/lbm.out 容差比对 → 给出耗时/退出码/判分明细。
+

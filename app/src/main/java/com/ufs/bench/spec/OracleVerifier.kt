@@ -36,7 +36,11 @@ object OracleVerifier {
         type: String,
         absTol: Double = 1e-7,
         relTol: Double = 1e-4,
-        maxReport: Int = 5
+        maxReport: Int = 5,
+        /** 命中任一子串的行不参与比对（两侧同时生效）；空列表 = 全量比对。
+         *  用途：SPEC 类基准的官方输出含时间/内存分配行，每次运行都不同，
+         *  必须排除，否则正确实现也会被判不符（与 SPEC 官方 runrules 同口径）。 */
+        ignorePatterns: List<String> = emptyList()
     ): Result {
         if (type == "none" || referenceFile == null || !referenceFile.isFile) {
             return Result(false, false, 0, 0, emptyList(),
@@ -45,8 +49,12 @@ object OracleVerifier {
         if (!actualFile.isFile) {
             return Result(true, false, 0, 0, emptyList(), "被测输出文件缺失：" + actualFile.name)
         }
-        val refLines = referenceFile.readLines()
-        val actLines = actualFile.readLines()
+        fun skipped(line: String) = ignorePatterns.any { it.isNotEmpty() && line.contains(it) }
+        val refAll = referenceFile.readLines()
+        val actAll = actualFile.readLines()
+        val skippedCount = refAll.count { skipped(it) } + actAll.count { skipped(it) }
+        val refLines = refAll.filterNot { skipped(it) }
+        val actLines = actAll.filterNot { skipped(it) }
         val mismatches = ArrayList<Mismatch>()
         var compared = 0
         val n = minOf(refLines.size, actLines.size)
@@ -82,6 +90,9 @@ object OracleVerifier {
         val detail = StringBuilder().apply {
             append("参考 ").append(refLines.size).append(" 行 / 实测 ").append(actLines.size).append(" 行，比对 ")
             append(compared).append(" 行，容差 abs=").append(absTol).append(" rel=").append(relTol)
+            if (ignorePatterns.isNotEmpty()) {
+                append("；按 ignore_line_patterns 忽略 ").append(skippedCount).append(" 行")
+            }
             if (ok) append("：一致")
             else {
                 append("：不符 ").append(mismatches.size)

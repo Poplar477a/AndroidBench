@@ -107,7 +107,10 @@ object PrecompiledRunner {
         val ref = cfg.oracleReference?.let { File(dir, it) }
         val outFile = File(dir, cfg.stdoutFile ?: (cfg.benchmarkId + ".out"))
         if (outcome.stdout.isNotEmpty() && !outFile.isFile) outFile.writeText(outcome.stdout)
-        val oracle = OracleVerifier.verify(outFile, ref, cfg.oracleType, cfg.absTolerance, cfg.relTolerance)
+        val oracle = OracleVerifier.verify(
+            outFile, ref, cfg.oracleType, cfg.absTolerance, cfg.relTolerance,
+            ignorePatterns = cfg.ignoreLinePatterns
+        )
 
         val summary = SandboxedExecutor.PrecompiledBenchmarkSummary(
             benchmarkId = benchmarkId,

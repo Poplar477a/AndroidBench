@@ -1,4 +1,5 @@
 #!/bin/bash
+# Regenerates the full launcher icon set for both flavours (see the header of MakeIcons.java).
 # 由源图生成两个 flavor 的全套启动图标（见 MakeIcons.java 顶部说明）
 #   lab 版      <- tools/icon/source/lab.png      （文件名决定归属，改图直接替换同名文件）
 #   standard 版 <- tools/icon/source/standard.jpg

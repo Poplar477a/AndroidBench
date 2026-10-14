@@ -1,6 +1,18 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
+SPEC CPU2017 -> Android BYOB bundle build pipeline
+============================================================================
+Cross-compiles SPEC2017 sources from the user's own installation media into Android bundles
+(bin/ + data/ + runner.json) that the UFS Benchmark "binary testing (BYOB)" feature can import.
+
+Official-convention notes (verified on this project, see docs/verified-facts.md round 27):
+  - Compiling with -DSPEC is mandatory: the official reference outputs were produced with that macro.
+    Without it the code takes #if !defined(SPEC) branches and both line counts and values may differ.
+  - mcf additionally needs -DSPEC_HAVE_INTTYPES_H and the benchmark's own src/spec_qsort/
+    (the official run uses SPEC's own qsort; different sort stability changes the iteration path).
+  - The official reference outputs are used as-is; this pipeline never redistributes SPEC content.
+
 SPEC CPU2017 → Android BYOB 组件包 构建流水线
 ============================================================================
 把 DVD 安装介质里的 SPEC2017 源码，按**官方口径**交叉编译成 Android 可执行的

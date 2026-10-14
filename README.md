@@ -1,4 +1,10 @@
+<p align="center">
+  <img src="docs/assets/icon.png" width="112" alt="AndroidBench icon">
+</p>
+
 # UFS Storage Benchmark · AndroidBench
+
+**中文** · [English](README.en.md)
 
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 [![Release](https://img.shields.io/badge/release-0.1.0--Alpha-orange.svg)](../../releases)

@@ -6,6 +6,17 @@ import java.io.*;
 import java.nio.file.*;
 
 /**
+ * Generates the full Android launcher icon set from a single 1280x1280 source image:
+ *   - legacy square  mipmap-&lt;density&gt;/ic_launcher.png        (48/72/96/144/192)
+ *   - round variant  mipmap-&lt;density&gt;/ic_launcher_round.png  (same sizes, circular alpha mask)
+ *   - adaptive foreground drawable-&lt;density&gt;/ic_launcher_foreground.png
+ *                    (108dp canvas, artwork scaled to ~62% and centred inside the safe zone)
+ *   - adaptive descriptors mipmap-anydpi-v26/ic_launcher{,_round}.xml
+ *   - background colour values/ic_launcher_background.xml (average of the source image corners)
+ *   - repository image docs/assets/icon.png (512x512, README/docs only, not packaged)
+ *
+ * Usage: java MakeIcons.java &lt;source image&gt; &lt;target res dir&gt;
+ *
  * 由一张 1280x1280 源图生成 Android 全套启动图标：
  *   · 传统方图  mipmap-<density>/ic_launcher.png        (48/72/96/144/192)
  *   · 圆形图标  mipmap-<density>/ic_launcher_round.png  (同上，圆形 alpha 遮罩)
@@ -55,6 +66,12 @@ public class MakeIcons {
         Files.createDirectories(anydpi);
         Files.write(anydpi.resolve("ic_launcher.xml"), xml.getBytes("UTF-8"));
         Files.write(anydpi.resolve("ic_launcher_round.xml"), xml.getBytes("UTF-8"));
+
+        // 额外产出一张 512x512 的仓库用图（README / 文档展示；不参与 APK 打包）
+        // Also emit a 512x512 copy for the repository (README/docs only; not packaged into the APK).
+        Path assets = Paths.get("docs/assets");
+        Files.createDirectories(assets);
+        write(assets.resolve("icon.png"), scale(sq, 512));
 
         int bg = cornerColor(sq);
         String color = String.format("#%06X", bg & 0xFFFFFF);

@@ -1,9 +1,23 @@
 #!/bin/bash
 # ============================================================================
-#  构建 BYOB 沙箱助手（jniLibs/libbyob_run.so）—— 保证与源码一致，杜绝二进制漂移
+#  Builds the BYOB sandbox helper (app/src/lab/jniLibs/<abi>/libbyob_run.so) from source so that the
+#  committed binary can always be reproduced and drift is impossible.
+#
+#  Why a script: the helper is a prebuilt executable checked into the repository (Android only allows
+#  executing native binaries from a lib directory, see PrecompiledRunner.runViaSu). Its source lives here
+#  too (tools/sandbox_test/byob_run.cpp + app/src/main/cpp/sandboxed_runner.cpp), so a one-command
+#  rebuild must exist; otherwise editing the source without refreshing the binary silently produces
+#  "source looks right, device behaves old".
+#
+#  Why the lab source set: the BYOB terminal is a lab-only feature (standard builds set
+#  FEATURE_EXTERNAL_SPEC=false and hide the terminal page). Keeping the helper in app/src/lab/jniLibs/
+#  means the standard APK ships **no prebuilt executable at all**, which avoids the "APK embeds a native
+#  executable" heuristic used by security scanners.
+#
+#  构建 BYOB 沙箱助手 —— 保证与源码一致，杜绝二进制漂移
 #
 #  为什么需要这个脚本：
-#    app/src/main/jniLibs/<abi>/libbyob_run.so 是**签入版本库**的预编译可执行文件
+#    app/src/lab/jniLibs/<abi>/libbyob_run.so 是**签入版本库**的预编译可执行文件
 #    （Android 只允许从 lib 目录执行原生二进制，见 PrecompiledRunner.runViaSu）。
 #    它的源码就在本仓库（tools/sandbox_test/byob_run.cpp + app/src/main/cpp/sandboxed_runner.cpp），
 #    所以必须能从源码一键复现；否则改了源码却忘了同步二进制，就会出现

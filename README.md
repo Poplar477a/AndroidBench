@@ -1,6 +1,16 @@
-# UFS Storage Benchmark (Android Native)
+# UFS Storage Benchmark · AndroidBench
 
-> **基于 FIO 与 Iometer 架构移植的 Android 移动端存储性能基准测试工具**
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/badge/release-0.1.0--Alpha-orange.svg)](../../releases)
+[![Platform](https://img.shields.io/badge/platform-Android%208.0%2B%20(API%2026)-green.svg)](#)
+[![Network](https://img.shields.io/badge/network-none-brightgreen.svg)](#九-许可商标与合规2026-10-整改)
+
+> **Android 移动端存储性能基准工具**：参考 FIO 与 Iometer 的测试模型**独立实现**，
+> 内置上游源码裁剪的算力/内存层次基准（CoreMark / STREAM / tinymembench），
+> 并支持用户自备组件包（BYOB）做二进制级测试与判分。
+
+本项目为独立实现的测量工具，与 JEDEC / SPEC / EEMBC / Google 等组织**无隶属、赞助或背书关系**；
+采用 Apache-2.0 许可（见 LICENSE），第三方组件版权与许可见 NOTICE 与 THIRD_PARTY_LICENSES.md。
 
 ---
 

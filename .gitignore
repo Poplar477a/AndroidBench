@@ -65,3 +65,4 @@ extra/*.fio
 
 # GitHub 源码导出副本（由 git archive 生成，可随时重建）
 source-export/
+extra/qpm-*.cmd   # 与本项目无关的 QPM/WSL 批处理（已移出版本库，仅本地保留）

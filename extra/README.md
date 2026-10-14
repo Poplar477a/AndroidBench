@@ -7,7 +7,7 @@ app/ AndroidBench/ tools/ docs/ gradle/ dist/ 以及构建配置与 keystore。
 
 | 条目 | 是什么 | 能否删除 |
 |---|---|---|
-| qpm-*.cmd | QPM（WSL 交互 shell / 产品列表）的 Windows 批处理，与本项目无关 | 可删（不属于本项目） |
+| qpm-*.cmd | QPM（WSL 交互 shell / 产品列表）的 Windows 批处理，与本项目无关。**已移出版本库**（仅本地保留，.gitignore 排除），公开仓库不再带这些文件 | 可删（不属于本项目） |
 | .deliver/ | 早期交付快照（UFSBenchmark/ 副本 + UFSBenchmark-source-20261012.zip） | 可删（历史快照） |
 | .buildlogs/ | 早期构建日志 | 可删 |
 | .spec2017-iso/ .spec2017-raw/ .spec2017-out/ .spec2017-req/ | SPEC2017 接入过程中的中间产物（空的/清单/输出）。注意 tools/spec2017 里的脚本默认仍写 .spec2017-out、.spec2017-req，会在根目录按需重建 | 可删（可重建） |
